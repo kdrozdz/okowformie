@@ -24,3 +24,4 @@
 
 - Komenda `seed_demo_data` wymagała dodania `"backend"` (pakiet projektu) do `INSTALLED_APPS` — bez tego `manage.py` nie widzi `management/commands/` na poziomie projektu.
 - Media w dev serwowane bezpośrednio przez Django (`static()` w `urls.py`) tylko pod `DEBUG=True` — na produkcji nadal przez reverse proxy/CDN, zgodnie z `security.md`.
+- Naprawiony realny bug (nie tylko dev): `request.build_absolute_uri()` w serializerach `about`/`blog` budował URL-e obrazów z `Host` żądania — server-side fetch z kontenera frontendu dawał nieosiągalny `http://backend:8000/...` w `og:image`/JSON-LD. Fix: `SITE_URL` (setting) + `core.api.absolute_media_url()` (wspólny helper). Zweryfikowane na żywo.
