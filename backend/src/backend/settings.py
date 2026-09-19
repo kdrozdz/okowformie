@@ -68,10 +68,16 @@ INSTALLED_APPS = [
     # Edytor WYSIWYG w panelu redakcyjnym (assety serwowane lokalnie przez
     # staticfiles, bez zewnętrznego CDN — patrz .claude/rules/security.md).
     "django_prose_editor",
+    # Stałe i narzędzia domenowo neutralne (języki, status publikacji,
+    # sanityzacja HTML, walidacja uploadu obrazu) — bez modeli. `blog` i
+    # `about` zależą od tego zamiast zależeć jedna od drugiej
+    # (`docs/decisions/2026-09-19-model-about-me.md`).
+    "core",
     # Apps domenowe (patrz .claude/rules/scope.md — podział domenowy od
-    # początku, docelowo obok `accounts` pojawią się `blog`, `shop`, ...).
+    # początku, docelowo obok `accounts` pojawią się `shop`, `bookings`, ...).
     "accounts",
     "blog",
+    "about",
 ]
 
 MIDDLEWARE = [
@@ -229,6 +235,7 @@ REST_FRAMEWORK = {
     # endpointów faz 2/3.
     "DEFAULT_THROTTLE_RATES": {
         "posts": os.environ.get("BLOG_API_THROTTLE_RATE", "60/min"),
+        "about": os.environ.get("ABOUT_API_THROTTLE_RATE", "60/min"),
     },
 }
 
