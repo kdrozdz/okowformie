@@ -2,6 +2,8 @@
 
 ## Projekt
 
+**okowFormie** — blog optometryczny (soczewki kontaktowe, okulary, zdrowie wzroku). Nie mylić z „Cyberfolks" — to wyłącznie dostawca hostingu/domeny, nie marka ani temat serwisu.
+
 Blog (**faza 1, aktywna**) → Sklep + konta + rezerwacje (faza 2) → Szkolenia online (faza 3).
 Domena i hosting: Cyberfolks (VPS, linia vroot — patrz `docs/decisions/2026-09-19-hosting-cyberfolks-vps.md`). Autor treści jest osobą nietechniczną — dodaje posty sam, bez developera.
 
@@ -9,11 +11,13 @@ Fazy i zasady przyszłościowe: `.claude/rules/scope.md`. **Nie implementuj nic 
 
 ## Stack
 
-Next.js/TS · Django+DRF · PostgreSQL · S3 · Docker · AWS
+Next.js/TS · Django+DRF · PostgreSQL · Redis · Docker · Cyberfolks (VPS)
+
+Blog dwujęzyczny **PL/EN od startu** — patrz `docs/decisions/2026-09-19-model-post.md`.
 
 ## Zakres fazy 1
 
-W zakresie: model `Post`, panel redakcyjny (draft→publish), publiczne API read-only, strony bloga + SEO, upload obrazów do S3, deploy + CI.
+W zakresie: model `Post` (+ tłumaczenia PL/EN), panel redakcyjny (`draft` → `published` → `archived`), publiczne API read-only, strony bloga + SEO/GEO, upload obrazów (storage do ustalenia — patrz Otwarte decyzje), deploy + CI.
 Poza zakresem: sklep, płatności, logowanie publiczne, rezerwacje, komentarze, newsletter.
 
 ## Struktura repo
@@ -36,13 +40,16 @@ Monorepo, backend i frontend wdrażane niezależnie.
 ## Komendy
 
 ```bash
-docker compose up -d
-cd backend && python manage.py migrate
-cd backend && python manage.py createsuperuser
-cd backend && pytest
+docker compose up -d                                   # cały stack: frontend, backend, db, cache
+cd backend && uv run manage.py migrate                 # backend używa uv, nie gołego python
+cd backend && uv run manage.py createsuperuser
+cd backend && uv run pytest
+cd backend && uv run ruff check . && uv run mypy src
 cd frontend && npm run dev
-cd frontend && npm run lint && npm run typecheck && npm test
+cd frontend && npm run lint && npm run typecheck
 ```
+
+Frontend nie ma jeszcze skryptu `test` (brak Vitest) — do dołożenia przy pierwszym komponencie z logiką, zgodnie z `.claude/rules/conventions.md`.
 
 ## Subagenci
 
@@ -55,7 +62,7 @@ Zmiana przekrojowa → `uiux-agent` (jeśli UI) → `backend-agent` → `fronten
 | `frontend-agent` | `/frontend` |
 | `backend-agent` | `/backend` |
 | `infra-agent` | `/infra`, `docker-compose.yml`, `.github/` |
-| `seo-agent` | audyt SEO — wdraża Frontend |
+| `seo-agent` | audyt SEO + GEO (widoczność w AI) — wdraża Frontend |
 | `qa-agent` | testy i review — edytuje tylko katalogi testów |
 | `uiux-agent` | specyfikacje UI/UX — wdraża Frontend |
 
@@ -66,6 +73,7 @@ Zmiana przekrojowa → `uiux-agent` (jeśli UI) → `backend-agent` → `fronten
 ## Konfiguracja Claude Code
 
 - `.claude/rules/` — `scope.md` i `engineering-principles.md` ładują się zawsze; pozostałe mają `paths:` i wchodzą do kontekstu dopiero przy pracy nad pasującymi plikami.
+- `code-quality.md` przenosi kryteria review na etap pisania kodu — `/review` przez `qa-agent` zostaje jako druga para oczu, nie jako pierwsze miejsce, gdzie wychodzą błędy.
 - `.claude/agents/` — subagenci. `.claude/commands/` — slash commands. `.claude/settings.json` — uprawnienia (allow/ask/deny).
 - Nie duplikuj treści reguł w innych plikach — odsyłaj do nich ścieżką.
 
@@ -73,10 +81,15 @@ Zmiana przekrojowa → `uiux-agent` (jeśli UI) → `backend-agent` → `fronten
 
 Nie zgaduj — zapytaj, zanim zaimplementujesz cokolwiek, co od nich zależy:
 
-- **Edytor treści w adminie**: WYSIWYG (TipTap/CKEditor) vs Markdown vs Wagtail zamiast Django Admin.
 - **Media/upload obrazów**: S3 jako czysty object storage vs wolumen na VPS Cyberfolks (decyzja o hostingu w `docs/decisions/2026-09-19-hosting-cyberfolks-vps.md` zostawia to pytanie otwarte).
 - **Sekrety bez AWS**: `.env` poza repo vs inne narzędzie (Vault itp.) — do ustalenia przy przepisywaniu `infra-agent` pod deploy VPS.
-- **Wielojęzyczność**: tylko PL czy PL/EN (wpływa na model `Post` i routing — decyzja przed pierwszą migracją).
 - **Integracja z Instagramem**: czy w fazie 1.
 - **Kategorie/tagi**: czy w fazie 1, czy dopiero gdy przybędzie postów.
 - **Narzędzie do szkoleń online** (faza 3).
+
+## Rozstrzygnięte (nie otwieraj od nowa)
+
+- **Edytor treści**: WYSIWYG w Django Admin — `docs/decisions/2026-09-19-model-post.md`.
+- **Wielojęzyczność**: PL/EN od startu, wzorzec master + tłumaczenia — tamże.
+- **Hosting**: Cyberfolks VPS zamiast AWS — `docs/decisions/2026-09-19-hosting-cyberfolks-vps.md`.
+- **Generowanie treści przez AI (LangChain)**: osobny task, poza `7-dodanie-postu` — `docs/decisions/2026-09-19-langchain-osobny-task.md`.

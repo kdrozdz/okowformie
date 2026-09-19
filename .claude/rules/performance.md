@@ -17,7 +17,7 @@ paths:
 
 ## Backend
 - `select_related`/`prefetch_related` zamiast N+1.
-- Indeksy na `slug` (unique), `status`, `published_at`; indeks złożony pod listę publiczną (`status`, `-published_at`).
+- Indeksy na modelu **tłumaczenia** (tam leżą `slug`, `status`, `published_at` — model jest rozbity PL/EN): `slug` unikalny w obrębie języka, indeks złożony pod listę publiczną (`language`, `status`, `-published_at`).
 - Paginacja obowiązkowa na listach — brak endpointu zwracającego wszystko.
 - Lista postów nie serializuje pełnej treści, tylko excerpt.
-- Cache HTTP (`Cache-Control`, ETag) + CDN (CloudFront) przed API i mediami.
+- Cache HTTP (`Cache-Control`, ETag) + CDN przed API i mediami. Konkretny dostawca CDN nierozstrzygnięty (odpada CloudFront — nie ma AWS); do ustalenia razem z decyzją o storage mediów.

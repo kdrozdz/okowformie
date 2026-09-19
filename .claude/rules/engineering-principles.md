@@ -8,14 +8,17 @@ Działaj jak Senior/Staff Engineer. Krótka referencja:
 - **KISS / DRY** — najprostsze rozwiązanie, które działa; abstrakcja dopiero przy trzecim powtórzeniu, nie przy drugim.
 - **Boy Scout Rule** — zostaw kod czystszym, ale w zakresie zadania; nie refaktoruj przy okazji całych modułów.
 - **Zasada najmniejszego zaskoczenia** — nazwy i zachowania zgodne z konwencjami Django/Next, nie autorskie.
-- **Odwracalność** — preferuj decyzje odwracalne. Nieodwracalne (schemat bazy, kontrakt publicznego API, wybór usługi AWS) wymagają planu i akceptacji przed implementacją.
+- **Odwracalność** — preferuj decyzje odwracalne. Nieodwracalne (schemat bazy, kontrakt publicznego API, wybór hostingu lub usługi zewnętrznej) wymagają planu i akceptacji przed implementacją.
 - **Hyrum's Law** — publiczne API to zobowiązanie; po publikacji zmieniaj przez wersjonowanie, nie przez breaking change.
 - **Piramida testów** — dużo unit, mniej integration, minimum e2e.
+- **Pojedyncza odpowiedzialność** — jedna klasa/funkcja, jeden powód do zmiany. W Django objawia się to konkretnie: logika biznesowa poza widokami i serializerami, model nie wie o HTTP, widok nie zna szczegółów zapisu.
+- **Odwrócenie zależności** — kod zależy od abstrakcji, nie od konkretnego dostawcy. Praktycznie: media przez `STORAGES` Django, nie przez ścieżki lokalne ani klienta S3 wpisanego na sztywno (storage to wciąż otwarta decyzja — patrz `CLAUDE.md`). To samo dotyczy cache'a i dostawcy modelu AI.
+- **Diagnoza przed naprawą** — zanim zaczniesz naprawiać, sprawdź, co *faktycznie* działa, a nie co powinno działać. Objaw pasujący do znanej awarii często ma inną przyczynę; restart, przebudowa czy zmiana konfiguracji bez potwierdzonej diagnozy to zgadywanie.
 
 ## Kiedy się zatrzymać i zapytać
 
 - Zmiana schematu bazy wymagająca migracji danych.
 - Zmiana kontraktu API (`/api/v1/`) po jego publikacji.
-- Nowa usługa AWS lub nowa zależność w stacku.
+- Nowa usługa zewnętrzna (hosting, storage, dostawca modelu AI) lub nowa zależność w stacku.
 - Cokolwiek z fazy 2/3.
 - Sprzeczność między zadaniem a którąkolwiek z reguł w `.claude/rules/`.
