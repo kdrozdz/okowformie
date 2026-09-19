@@ -72,7 +72,7 @@ const DICTIONARIES: Record<Language, Dictionary> = {
       heading: "Najnowsze wpisy",
       metaTitle: "Blog | okowFormie",
       metaDescription:
-        "Artykuły o zdrowiu wzroku, soczewkach kontaktowych, okularach i optometrii.",
+        "Praktyczne artykuły o zdrowiu wzroku, doborze soczewek kontaktowych, okularach i optometrii — porady napisane przez optometrystkę, bez branżowego żargonu.",
       empty: "Brak opublikowanych wpisów.",
       previousPage: "Poprzednia strona",
       nextPage: "Następna strona",
@@ -119,7 +119,8 @@ const DICTIONARIES: Record<Language, Dictionary> = {
     posts: {
       heading: "Latest posts",
       metaTitle: "Blog | okowFormie",
-      metaDescription: "Articles about eye health, contact lenses, glasses and optometry.",
+      metaDescription:
+        "Practical articles about eye health, choosing contact lenses, glasses and optometry — written by a working optometrist, no jargon, just what actually helps.",
       empty: "No published posts yet.",
       previousPage: "Previous page",
       nextPage: "Next page",

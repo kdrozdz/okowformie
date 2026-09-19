@@ -12,31 +12,46 @@ interface PostsPageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params }: PostsPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PostsPageProps): Promise<Metadata> {
   const { lang } = await params;
   if (!isSupportedLanguage(lang)) return {};
 
-  // Endpoint listy nie zwraca meta_title/meta_description (oczekiwane, nie
-  // brakujący endpoint) — statyczne metadane per język.
+  const { page: rawPage } = await searchParams;
+  const page = parsePage(rawPage);
+
+  // Self-referencing canonical per stronę paginacji — kanonizacja wszystkich
+  // stron do strony 1 odcina Google ścieżkę crawlowania do treści na
+  // kolejnych stronach (aktualna wytyczna Google, sprawdzona przy audycie
+  // tego taska). Endpoint listy nie zwraca meta_title/meta_description
+  // (oczekiwane, nie brakujący endpoint) — statyczne metadane per język.
   const dict = getDictionary(lang).posts;
+  const canonicalPath = page > 1 ? `/${lang}/posty?page=${page}` : `/${lang}/posty`;
 
   return {
     title: dict.metaTitle,
     description: dict.metaDescription,
     alternates: {
-      canonical: `/${lang}/posty`,
-      // Statyczna mapa: obie trasy listy istnieją niezależnie od zawartości.
-      languages: {
-        pl: "/pl/posty",
-        en: "/en/posty",
-        "x-default": "/pl/posty",
-      },
+      canonical: canonicalPath,
+      // hreflang tylko na stronie 1: to jedyna strona listy gwarantowana w
+      // obu językach. Przy różnej liczbie stron per język (dziś: EN ma
+      // tylko 1 post = 1 strona) nie da się bez dodatkowego zapytania do
+      // API drugiego języka bezpiecznie założyć, że odpowiadająca strona
+      // istnieje — pomijamy `languages` zamiast zgadywać.
+      ...(page === 1
+        ? {
+            languages: {
+              pl: "/pl/posty",
+              en: "/en/posty",
+              "x-default": "/pl/posty",
+            },
+          }
+        : {}),
     },
     openGraph: {
       type: "website",
       title: dict.metaTitle,
       description: dict.metaDescription,
-      url: `/${lang}/posty`,
+      url: canonicalPath,
     },
     twitter: {
       card: "summary_large_image",
