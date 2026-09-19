@@ -1,0 +1,24 @@
+# Kontekst builda z roota (przyszły deploy na Cyberfolks VPS — patrz
+# docs/decisions/2026-09-19-hosting-cyberfolks-vps.md). Lokalny docker-compose
+# buduje z ./backend i ./frontend osobno i ma tam własne, osobne .dockerignore
+# — ten plik dotyczy tylko builda z kontekstem = katalog główny repo.
+
+.git
+.github
+.idea
+.claude
+docs/
+*.md
+
+docker-compose.yml
+env.example
+.env
+.env.*
+
+**/node_modules
+**/.venv
+**/__pycache__
+**/.next
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
