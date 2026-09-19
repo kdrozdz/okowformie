@@ -1,0 +1,73 @@
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--indigo);
+  border-radius: 4px;
+}
+
+.back:hover {
+  color: var(--navy);
+}
+
+.coverWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  background: var(--border);
+}
+
+.coverImage {
+  object-fit: cover;
+}
+
+.date {
+  font-size: 0.85rem;
+  color: var(--teal);
+  font-weight: 500;
+  margin: -0.75rem 0 1.5rem;
+}
+
+.body :global(p) {
+  line-height: 1.7;
+  color: var(--ink);
+  margin: 0 0 1.1rem;
+}
+
+.body :global(h2) {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 1.75rem 0 0.9rem;
+}
+
+.body :global(ul),
+.body :global(ol) {
+  margin: 0 0 1.1rem;
+  padding-left: 1.4rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.body :global(blockquote) {
+  margin: 0 0 1.1rem;
+  padding: 0.75rem 1.1rem;
+  border-left: 3px solid transparent;
+  border-image: var(--accent-gradient) 1;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.body :global(a) {
+  color: var(--indigo);
+  text-decoration: underline;
+}
