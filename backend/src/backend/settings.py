@@ -60,10 +60,18 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "corsheaders",
+    # Tłumaczenia treści (master + translation) — patrz
+    # `docs/decisions/2026-09-19-model-post.md`.
+    "parler",
+    # Edytor WYSIWYG w panelu redakcyjnym (assety serwowane lokalnie przez
+    # staticfiles, bez zewnętrznego CDN — patrz .claude/rules/security.md).
+    "django_prose_editor",
     # Apps domenowe (patrz .claude/rules/scope.md — podział domenowy od
     # początku, docelowo obok `accounts` pojawią się `blog`, `shop`, ...).
     "accounts",
+    "blog",
 ]
 
 MIDDLEWARE = [
@@ -155,12 +163,52 @@ TIME_ZONE = "Europe/Warsaw"
 USE_I18N = True
 USE_TZ = True
 
-# --- Pliki statyczne ---------------------------------------------------
+# Języki treści serwisu. To jedyne źródło prawdy: `parler` bierze stąd
+# `choices` dla `PostTranslation.language_code`, a `blog.constants.Language`
+# jest z tym zestawiane systemowym checkiem (`blog.checks`), żeby rozjazd
+# wyszedł przy `manage.py check`, a nie w produkcji.
+LANGUAGES = [
+    ("pl", "polski"),
+    ("en", "angielski"),
+]
+
+# `django-parler`: PL jest językiem domyślnym, EN nie ma fallbacku na PL —
+# brak tłumaczenia EN ma być widoczny jako brak (404 / ukrycie na liście),
+# a nie po cichu podmieniony polską treścią (`.claude/rules/seo.md`:
+# duplikat treści pod innym `hreflang` to problem, nie udogodnienie).
+PARLER_DEFAULT_LANGUAGE_CODE = "pl"
+PARLER_LANGUAGES = {
+    None: (
+        {"code": "pl"},
+        {"code": "en"},
+    ),
+    "default": {
+        "fallbacks": [],
+        "hide_untranslated": True,
+    },
+}
+
+# --- Pliki statyczne i media ---------------------------------------------
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Backend storage pozostaje domyślny (`STORAGES`) — wybór docelowego
+# magazynu mediów (S3 vs wolumen na VPS) jest otwartą decyzją w `CLAUDE.md`.
+# Kod aplikacji nie zakłada ścieżek lokalnych: `upload_to` generuje wyłącznie
+# ścieżkę względną, więc podmiana backendu nie wymaga migracji danych
+# (`.claude/rules/scope.md`).
+MEDIA_URL = os.environ.get("MEDIA_URL", "media/")
+MEDIA_ROOT = os.environ.get("MEDIA_ROOT") or BASE_DIR / "media"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# `django_prose_editor.W004` przypomina o włączeniu `sanitize=True` na polu
+# edytora. Świadomie nie włączamy: sanityzacja HTML-a jest w
+# `blog.sanitization`, jedną allowlistą stosowaną przy zapisie **i** przy
+# odczycie (`.claude/rules/security.md`). Drugi, wyprowadzany z konfiguracji
+# edytora filtr dawałby dwie różne prawdy o tym, co wolno w treści.
+SILENCED_SYSTEM_CHECKS = ["django_prose_editor.W004"]
 
 # --- Panel admina pod niestandardowym URL-em -------------------------------
 # .claude/rules/security.md: "Panel admina pod niestandardowym URL-em".
