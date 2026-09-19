@@ -122,6 +122,12 @@ services:
       # klienckiego, więc musi być wywoływalny przez przeglądarkę na hoście,
       # która nie jest częścią sieci compose.
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Server-only (bez `NEXT_PUBLIC_`, więc Next.js nie wypieka jej do bundla
+      # klienckiego). Używana przez fetch wykonywany wewnątrz kontenera
+      # `frontend` (Server Components, `generateMetadata`, `generateStaticParams`)
+      # — tam `localhost` to sam kontener `frontend`, nie `backend`, więc
+      # wartość musi wskazywać na nazwę usługi w sieci compose.
+      API_URL: ${API_URL:-http://backend:8000}
     volumes:
       - ./frontend:/app
       # Analogicznie do `backend-venv`: chroni `node_modules` i `.next`
