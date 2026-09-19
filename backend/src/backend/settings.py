@@ -217,11 +217,28 @@ SILENCED_SYSTEM_CHECKS = ["django_prose_editor.W004"]
 ADMIN_URL = os.environ.get("ADMIN_URL", "panel-redakcyjny/")
 
 # --- Django REST Framework -------------------------------------------------
-# Bez konfiguracji endpointów domenowych na tym etapie — tylko instalacja.
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Punkt startowy dla anonimowych żądań do publicznego API bloga
+    # (`.claude/rules/security.md`: rate limiting publicznego API). Scope
+    # `posts` używany jawnie w `blog.throttling.PostsAnonRateThrottle`, nie
+    # domyślny `anon`, żeby dało się go stroić niezależnie od przyszłych
+    # endpointów faz 2/3.
+    "DEFAULT_THROTTLE_RATES": {
+        "posts": os.environ.get("BLOG_API_THROTTLE_RATE", "60/min"),
+    },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Blog API",
+    "DESCRIPTION": "Publiczne, read-only API bloga (docs/tasks/8-publiczne-api.md).",
+    "VERSION": "1.0.0",
+    # Schema wystawiana pod /api/v1/schema/ jawnym `path()` w `backend.urls`,
+    # nie przez auto-discovery drf-spectacular.
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 # --- Twarde ustawienia bezpieczeństwa poza DEBUG ---------------------------

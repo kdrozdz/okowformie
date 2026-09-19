@@ -2,8 +2,7 @@
 
 ## Projekt
 
-**okowFormie** — blog optometryczny (soczewki kontaktowe, okulary, zdrowie wzroku). Nie mylić z „Cyberfolks" — to wyłącznie dostawca hostingu/domeny, nie marka ani temat serwisu.
-
+**okowFormie** — blog optometryczny (soczewki kontaktowe, okulary, zdrowie wzroku, kursy optyczne/ optometrystyczne, wizyty, porad).
 Blog (**faza 1, aktywna**) → Sklep + konta + rezerwacje (faza 2) → Szkolenia online (faza 3).
 Domena i hosting: Cyberfolks (VPS, linia vroot — patrz `docs/decisions/2026-09-19-hosting-cyberfolks-vps.md`). Autor treści jest osobą nietechniczną — dodaje posty sam, bez developera.
 
