@@ -53,6 +53,14 @@ CSRF_TRUSTED_ORIGINS = _env_list("CSRF_TRUSTED_ORIGINS")
 # --- Aplikacje ------------------------------------------------------------
 
 INSTALLED_APPS = [
+    # Projekt sam jako "app" bez modeli — jedyny sposób, żeby Django w ogóle
+    # znalazł polecenia w `backend/management/commands/` (np. `seed_demo_data`,
+    # kompozycyjny skrypt seedujący `blog` i `about` naraz: obie domeny celowo
+    # się nie importują nawzajem, `.claude/rules/scope.md`, więc taki skrypt
+    # nie pasuje do żadnej z nich). `get_commands()` w Django skanuje wyłącznie
+    # `INSTALLED_APPS` — bez wpisu tutaj katalog `management/` na poziomie
+    # projektu byłby po prostu niewidoczny dla `manage.py`.
+    "backend",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
