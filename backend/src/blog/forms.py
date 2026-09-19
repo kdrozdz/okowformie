@@ -9,24 +9,15 @@ bo to warstwa rozmowy z redaktorem; model pilnuje niezmienników twardo
 from typing import Any
 
 from django import forms
-from django.conf import settings
 from django.utils.html import strip_tags
 from django_prose_editor.widgets import AdminProseEditorWidget
 from parler.forms import TranslatableModelForm
 
-from .constants import (
-    META_DESCRIPTION_MAX_LENGTH,
-    META_DESCRIPTION_MIN_LENGTH,
-    META_TITLE_MAX_LENGTH,
-    PostStatus,
-)
+from core.i18n import language_label
+
+from .constants import META_DESCRIPTION_MIN_LENGTH, PostStatus
 from .models import Post, PostTranslation
 from .slugs import build_unique_slug
-
-
-def language_label(language_code: str) -> str:
-    """Nazwa języka po polsku, do wstawienia w komunikat błędu."""
-    return dict(settings.LANGUAGES).get(language_code, language_code)
 
 
 class PostAdminForm(TranslatableModelForm):
@@ -49,6 +40,37 @@ class PostAdminForm(TranslatableModelForm):
             # pola tłumaczone poza `formfield_overrides` admina, więc admin
             # sam by go nie podmienił.
             "content": AdminProseEditorWidget,
+        }
+        # Django odrzuca `title`/`excerpt` puste i `meta_title`/`meta_description`
+        # za długie na poziomie pola formularza — **przed** `clean()` niżej —
+        # więc przyjazny komunikat musi siedzieć tutaj, nie w
+        # `_validate_seo`/`_validate_ready_to_publish` (te gałęzie były martwe:
+        # `cleaned_data` nie zawiera już odrzuconej wartości, kiedy tamten kod
+        # by się wykonał). Ten sam wzorzec co `about.forms.AboutMeAdminForm.Meta`
+        # — patrz tam komentarz o `django-parler` i o tym, dlaczego
+        # `error_messages` na polu modelu by tu nie zadziałał.
+        error_messages = {
+            "title": {
+                "required": "Tytuł jest wymagany — bez niego post nie ma nagłówka.",
+            },
+            "excerpt": {
+                "required": (
+                    "Zajawka jest wymagana — bez niej post nie pokaże się poprawnie "
+                    "na liście. Napisz dwa–trzy zdania streszczenia."
+                ),
+            },
+            "meta_title": {
+                "max_length": (
+                    "Tytuł SEO ma %(show_value)d znaków, maksimum to %(limit_value)d. "
+                    "Skróć go — wyszukiwarka i tak pokaże tylko pierwsze %(limit_value)d."
+                ),
+            },
+            "meta_description": {
+                "max_length": (
+                    "Opis SEO ma %(show_value)d znaków, maksimum to %(limit_value)d. "
+                    "Skróć go, bo dłuższy zostanie ucięty w połowie zdania."
+                ),
+            },
         }
 
     def clean(self) -> dict[str, Any]:
@@ -100,22 +122,13 @@ class PostAdminForm(TranslatableModelForm):
     # --- SEO -----------------------------------------------------------
 
     def _validate_seo(self, cleaned: dict[str, Any]) -> None:
-        meta_title = cleaned.get("meta_title") or ""
-        if len(meta_title) > META_TITLE_MAX_LENGTH:
-            self.add_error(
-                "meta_title",
-                forms.ValidationError(
-                    "Tytuł SEO ma %(length)d znaków. Skróć go o %(excess)d, "
-                    "bo wyszukiwarka i tak pokaże tylko %(limit)d pierwszych.",
-                    code="meta_title_too_long",
-                    params={
-                        "length": len(meta_title),
-                        "excess": len(meta_title) - META_TITLE_MAX_LENGTH,
-                        "limit": META_TITLE_MAX_LENGTH,
-                    },
-                ),
-            )
-
+        """Za długie `meta_title`/`meta_description` są już odrzucane na
+        poziomie pola formularza (`Meta.error_messages`, klucz `max_length`)
+        — Django woła `run_validators()` zanim ten `clean()` w ogóle się
+        wykona. Jedyna gałąź, która faktycznie dociera tutaj, to „za krótki
+        opis SEO": to reguła biznesowa bez odpowiednika w polu modelu
+        (`min_length` nie jest tam ustawiony), więc musi żyć w `clean()`.
+        """
         meta_description = cleaned.get("meta_description") or ""
         if not meta_description:
             # Puste jest w porządku — zadziała fallback na zajawkę.
@@ -133,32 +146,23 @@ class PostAdminForm(TranslatableModelForm):
                     params={"length": length, "missing": META_DESCRIPTION_MIN_LENGTH - length},
                 ),
             )
-        elif length > META_DESCRIPTION_MAX_LENGTH:
-            self.add_error(
-                "meta_description",
-                forms.ValidationError(
-                    "Opis SEO ma %(length)d znaków. Skróć go o %(excess)d, "
-                    "bo dłuższy zostanie ucięty w połowie zdania.",
-                    code="meta_description_too_long",
-                    params={
-                        "length": length,
-                        "excess": length - META_DESCRIPTION_MAX_LENGTH,
-                    },
-                ),
-            )
 
     # --- Gotowość do publikacji -------------------------------------------
 
     def _validate_ready_to_publish(self, cleaned: dict[str, Any]) -> None:
-        """Nie wypuszczaj pustej strony pod publiczny adres."""
+        """Nie wypuszczaj pustej strony pod publiczny adres.
+
+        `title`/`excerpt` są wymagane bezwarunkowo na poziomie pola modelu
+        (`blank=False`) — pusty formularz dostaje błąd (`Meta.error_messages`)
+        zanim ten `clean()` się wykona, więc nie duplikujemy tej walidacji
+        tutaj. `content` ma `blank=True` (dopuszczalne w szkicu), więc dopiero
+        próba publikacji z pustą treścią jest błędem — to jedyny przypadek,
+        który faktycznie dociera do tego miejsca.
+        """
         if cleaned.get("status") != PostStatus.PUBLISHED:
             return
 
         missing: list[str] = []
-        if not (cleaned.get("title") or "").strip():
-            missing.append("tytuł")
-        if not (cleaned.get("excerpt") or "").strip():
-            missing.append("zajawkę")
         if not strip_tags(cleaned.get("content") or "").strip():
             missing.append("treść")
 

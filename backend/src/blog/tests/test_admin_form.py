@@ -141,6 +141,52 @@ def test_bardzo_dlugi_tytul_jest_odrzucany(author: Any) -> None:
     assert "title" in form.errors
 
 
+def test_pusty_tytul_daje_przyjazny_komunikat(author: Any) -> None:
+    """`title` jest wymagany bezwarunkowo na poziomie pola modelu — Django
+    odrzuca go, zanim `PostAdminForm.clean()` się wykona. Komunikat musi więc
+    pochodzić z `Meta.error_messages`, nie z generycznego „To pole jest
+    wymagane" (defekt #2, `docs/tasks/9-strona-o-mnie.md`)."""
+    form = build_form(author, title="")
+
+    assert not form.is_valid()
+    message = " ".join(form.errors["title"])
+    assert "Tytuł jest wymagany" in message
+    assert message != "To pole jest wymagane."
+
+
+def test_pusta_zajawka_daje_przyjazny_komunikat(author: Any) -> None:
+    """Analogicznie do tytułu, ale dla `excerpt` (też wymagane bezwarunkowo)."""
+    form = build_form(author, excerpt="")
+
+    assert not form.is_valid()
+    message = " ".join(form.errors["excerpt"])
+    assert "Zajawka jest wymagana" in message
+
+
+def test_zbyt_dlugi_tytul_seo_daje_przyjazny_komunikat(author: Any) -> None:
+    """`meta_title.max_length == META_TITLE_MAX_LENGTH` odrzuca wartość na
+    poziomie pola formularza — przyjazny komunikat musi pochodzić z
+    `Meta.error_messages`, bo `_validate_seo` już nigdy go dla tego
+    przypadku nie zobaczy w `cleaned_data` (defekt #2)."""
+    form = build_form(author, meta_title="A" * 100)
+
+    assert not form.is_valid()
+    message = " ".join(form.errors["meta_title"])
+    assert "Skróć go" in message
+    assert "wyszukiwarka" in message
+    assert "Upewnij się" not in message  # generyczny komunikat Django
+
+
+def test_zbyt_dlugi_opis_seo_daje_przyjazny_komunikat(author: Any) -> None:
+    """Analogicznie do tytułu SEO, ale dla `meta_description`."""
+    form = build_form(author, meta_description="A" * 300)
+
+    assert not form.is_valid()
+    message = " ".join(form.errors["meta_description"])
+    assert "ucięty w połowie zdania" in message
+    assert "Upewnij się" not in message
+
+
 def test_publikacja_bez_okladki_przechodzi(author: Any) -> None:
     """Brak obrazu okładki nie blokuje publikacji — `cover_image` jest
     opcjonalny, a wymóg `cover_image_alt` odpala się tylko, gdy okładka
