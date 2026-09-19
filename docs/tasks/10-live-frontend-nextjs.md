@@ -17,6 +17,7 @@
 - [x] `frontend-agent`: routing `/[lang]/...` zamiast zakładek JS, Server Components + `fetch()` do API (bez TanStack Query), `next.config.ts` → `images.remotePatterns`, komponenty 1:1 z mockupu (Header, Footer, AboutSection, CertificatesSlider — client, PostList/PostCard, PostDetail), CSS Modules. Zweryfikowane: `lint`/`typecheck`/realny `next build` zielone, pełna macierz endpointów przez curl, hreflang/canonical/JSON-LD obecne i poprawne. Znaleziony i naprawiany osobno: `og:image`/`twitter:image` wskazywały na wewnętrzny host kontenera (`backend:8000`) zamiast publicznego adresu — błąd backendu (`build_absolute_uri` z `Host` requestu), nie frontendu.
 - [ ] `seo-agent`: audyt końcowy nowych tras (metadata/hreflang/canonical) — sitemap.xml/robots.txt poza zakresem tego taska (dotyczą całej witryny)
 - [ ] `qa-agent`: setup Vitest + React Testing Library (pierwszy komponent z logiką — `CertificatesSlider`), lekki test `seed_demo_data`, review całości pod kątem regresji/bezpieczeństwa
+- [ ] `/code-review` — druga, niezależna para oczu przed mergem (workflow z `CLAUDE.md`: „review (qa-agent + /code-review) zamknięte")
 - [ ] `/check` zielone, merge do `dev`
 
 ## Decyzje po drodze
