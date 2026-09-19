@@ -76,6 +76,13 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000}
       ADMIN_URL: ${ADMIN_URL:-panel-redakcyjny/}
+      # Publiczny adres serwisu, do budowania absolutnych URL-i obrazów w API
+      # (`photo`/`certificate.image`/`cover_image`) — NIE nazwa usługi w sieci
+      # compose. Wartość celowo `localhost:8000`: to host, pod którym API jest
+      # wywoływalne z przeglądarki ORAZ przez `next/image`'s `/_next/image`
+      # (patrz `frontend/next.config.ts` `remotePatterns`) — ten sam adres,
+      # którym frontend już configuruje dostęp do mediów z hosta.
+      SITE_URL: ${SITE_URL:-http://localhost:8000}
       POSTGRES_DB: ${POSTGRES_DB:-backend}
       POSTGRES_USER: ${POSTGRES_USER:-backend}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}

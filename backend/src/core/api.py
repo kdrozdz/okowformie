@@ -9,6 +9,7 @@ bez zależności od `blog` (`.claude/rules/scope.md`: apps podzielone domenowo).
 
 from typing import Any
 
+from django.conf import settings
 from django.http import Http404
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -19,6 +20,27 @@ from .constants import Language
 #: CDN nierozstrzygnięty (poza zakresem), ale sam nagłówek od niego nie
 #: zależy (`.claude/rules/performance.md`).
 DEFAULT_CACHE_CONTROL = "public, max-age=60"
+
+
+def absolute_media_url(url: str) -> str:
+    """Buduj absolutny URL obrazu z `settings.SITE_URL`, nie z `Host` żądania.
+
+    Współdzielone przez `about` i `blog` (`photo`/`certificate.image`/
+    `cover_image` w ich serializerach) — bez tego każda domena budowałaby
+    ten sam URL po swojemu, co jest dokładnie duplikacją zabronioną w
+    `.claude/rules/scope.md`.
+
+    Celowo NIE `request.build_absolute_uri()`: ten helper bierze host z
+    nagłówka `Host` PRZYCHODZĄCEGO żądania, a żądania do API bywają wołane
+    server-side z innego kontenera/adresu niż publiczna domena (np. frontend
+    Next.js łączący się przez `http://backend:8000` wewnątrz sieci docker
+    compose) — wtedy `og:image`/JSON-LD dostałyby wewnętrzny, nieosiągalny
+    z zewnątrz adres zamiast publicznego. `url` z `ImageField.url` jest zawsze
+    ścieżką względną zaczynającą się od `/` (`MEDIA_URL`), więc prosta
+    konkatenacja jest wystarczająca i jednoznaczna.
+    """
+
+    return f"{settings.SITE_URL.rstrip('/')}{url}"
 
 
 class LanguageURLKwargMixin:

@@ -7,18 +7,27 @@ analogicznie do `blog/tests/test_api_posts.py`.
 """
 
 from collections.abc import Callable
+from io import BytesIO
 from typing import Any
 
 import pytest
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
-from django.test import Client
+from django.test import Client, override_settings
 from django.test.utils import CaptureQueriesContext
+from PIL import Image
 
 from about.models import AboutMe, Certificate
 from core.constants import PublicationStatus
 
 pytestmark = pytest.mark.django_db
+
+
+def _valid_jpeg(name: str = "zdjecie.jpg") -> SimpleUploadedFile:
+    buffer = BytesIO()
+    Image.new("RGB", (2, 2), color="red").save(buffer, format="JPEG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/jpeg")
 
 
 @pytest.fixture(autouse=True)
@@ -162,6 +171,30 @@ def test_certyfikat_bez_zdjecia_daje_null(
     body = client.get("/api/v1/pl/about/").json()
 
     assert body["certificates"][0]["image"] is None
+
+
+@override_settings(SITE_URL="https://okowformie.pl")
+def test_zdjecia_uzywaja_site_url_a_nie_hosta_zadania(
+    client: Client,
+    make_about: Callable[..., AboutMe],
+    make_certificate: Callable[..., Certificate],
+) -> None:
+    """Absolutne URL-e `photo` i `certificates[].image` mają pochodzić z
+    `settings.SITE_URL`, nie z nagłówka `Host` żądania (test client domyślnie
+    woła `testserver`) — inaczej server-side fetch z kontenera frontendu
+    (`Host: backend:8000`) wyciekłby do `og:image`/JSON-LD jako nieosiągalny
+    z zewnątrz adres wewnętrzny."""
+    about = make_about(pl={"status": PublicationStatus.PUBLISHED})
+    about.photo = _valid_jpeg("zdjecie.jpg")
+    about.save()
+    make_certificate(about, image=_valid_jpeg("certyfikat.jpg"))
+
+    body = client.get("/api/v1/pl/about/").json()
+
+    assert body["photo"].startswith("https://okowformie.pl/media/")
+    assert "testserver" not in body["photo"]
+    assert body["certificates"][0]["image"].startswith("https://okowformie.pl/media/")
+    assert "testserver" not in body["certificates"][0]["image"]
 
 
 def test_naglowek_cache_control(client: Client, make_about: Callable[..., AboutMe]) -> None:

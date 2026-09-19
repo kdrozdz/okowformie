@@ -15,6 +15,8 @@ from datetime import datetime
 
 from rest_framework import serializers
 
+from core.api import absolute_media_url
+
 from .constants import PostStatus
 from .models import Post, PostTranslation
 
@@ -54,9 +56,7 @@ class PostListSerializer(serializers.Serializer):
     def get_cover_image(self, post: Post) -> str | None:
         if not post.cover_image:
             return None
-        request = self.context.get("request")
-        url = post.cover_image.url
-        return request.build_absolute_uri(url) if request is not None else url
+        return absolute_media_url(post.cover_image.url)
 
     def get_cover_image_alt(self, post: Post) -> str:
         return self._translation(post).cover_image_alt

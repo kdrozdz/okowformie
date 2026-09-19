@@ -215,6 +215,15 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = os.environ.get("MEDIA_URL", "media/")
 MEDIA_ROOT = os.environ.get("MEDIA_ROOT") or BASE_DIR / "media"
 
+# Publiczny adres serwisu, do budowania absolutnych URL-i obrazów w API
+# (`about.serializers`, `blog.serializers`). Celowo NIE `request.build_absolute_uri()`:
+# ten helper bierze host z nagłówka `Host` PRZYCHODZĄCEGO żądania, a żądania do
+# API bywają wołane server-side z innego kontenera/adresu niż publiczna domena
+# (np. frontend Next.js łączący się przez `http://backend:8000` wewnątrz sieci
+# docker compose) — wtedy `og:image`/JSON-LD dostałyby wewnętrzny, nieosiągalny
+# z zewnątrz adres zamiast publicznego.
+SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # `django_prose_editor.W004` przypomina o włączeniu `sanitize=True` na polu

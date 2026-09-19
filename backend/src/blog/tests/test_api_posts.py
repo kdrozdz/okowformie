@@ -9,18 +9,27 @@ nie duplikujemy tamtych testów.
 """
 
 from collections.abc import Callable
+from io import BytesIO
 from typing import Any
 
 import pytest
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
-from django.test import Client
+from django.test import Client, override_settings
 from django.test.utils import CaptureQueriesContext
+from PIL import Image
 
 from blog.constants import PostStatus
 from blog.models import Post
 
 pytestmark = pytest.mark.django_db
+
+
+def _valid_jpeg() -> SimpleUploadedFile:
+    buffer = BytesIO()
+    Image.new("RGB", (2, 2), color="red").save(buffer, format="JPEG")
+    return SimpleUploadedFile("okladka.jpg", buffer.getvalue(), content_type="image/jpeg")
 
 
 @pytest.fixture(autouse=True)
@@ -88,6 +97,25 @@ def test_lista_bez_okladki_daje_null(client: Client, make_post: Callable[..., Po
     item = client.get("/api/v1/pl/posts/").json()["results"][0]
 
     assert item["cover_image"] is None
+
+
+@override_settings(SITE_URL="https://okowformie.pl")
+def test_okladka_uzywa_site_url_a_nie_hosta_zadania(
+    client: Client, make_post: Callable[..., Post]
+) -> None:
+    """Absolutny URL okładki ma pochodzić z `settings.SITE_URL`, nie z
+    nagłówka `Host` żądania (test client domyślnie woła `testserver`) —
+    inaczej server-side fetch z kontenera frontendu (`Host: backend:8000`)
+    wyciekłby do `og:image`/JSON-LD jako nieosiągalny z zewnątrz adres
+    wewnętrzny."""
+    post = make_post(pl={"status": PostStatus.PUBLISHED})
+    post.cover_image = _valid_jpeg()
+    post.save()
+
+    item = client.get("/api/v1/pl/posts/").json()["results"][0]
+
+    assert item["cover_image"].startswith("https://okowformie.pl/media/")
+    assert "testserver" not in item["cover_image"]
 
 
 def test_zly_lang_daje_404(client: Client, make_post: Callable[..., Post]) -> None:
