@@ -340,6 +340,261 @@ POSTS: Final[tuple[PostSeed, ...]] = (
             "published_days_ago": 7,
         },
     },
+    {
+        "pl": {
+            "slug": "astygmatyzm-jak-wplywa-na-widzenie",
+            "title": "Astygmatyzm — jak wpływa na widzenie",
+            "excerpt": (
+                "Rozmyte kontury, zmęczone oczy pod koniec dnia, mrużenie przy "
+                "patrzeniu na światła w nocy — tak najczęściej objawia się "
+                "astygmatyzm. Wyjaśniamy, skąd się bierze i jak się go koryguje."
+            ),
+            "content": (
+                "<p><strong>Astygmatyzm</strong> to nieregularny kształt rogówki "
+                "lub soczewki oka, przez który obraz ogniskuje się w więcej niż "
+                "jednym punkcie — stąd rozmyte, jakby „rozciągnięte” kontury.</p>"
+                "<h2>Objawy</h2>"
+                "<ul>"
+                "<li>Rozmyte widzenie zarówno z bliska, jak i z daleka</li>"
+                "<li>Mrużenie oczu przy patrzeniu na źródła światła</li>"
+                "<li>Zmęczenie i bóle głowy pod koniec dnia</li>"
+                "</ul>"
+                "<h2>Jak się koryguje</h2>"
+                "<p>Najczęściej okularami lub soczewkami torycznymi — soczewkami "
+                "kontaktowymi zaprojektowanymi specjalnie pod nieregularny kształt "
+                "rogówki. W wybranych przypadkach rozważa się też korekcję "
+                "laserową.</p>"
+            ),
+            "cover_image_alt": (
+                "Wykres testu na astygmatyzm z liniami rozchodzącymi się od środka"
+            ),
+            "meta_title": "Astygmatyzm — jak wpływa na widzenie | okowFormie",
+            "meta_description": (
+                "Rozmyte kontury i zmęczone oczy? Sprawdź, czym jest astygmatyzm, "
+                "jakie daje objawy i jak koryguje się go soczewkami torycznymi, "
+                "okularami lub laserowo."
+            ),
+            "published_days_ago": 6,
+        },
+    },
+    {
+        "pl": {
+            "slug": "suchosc-oka-przyczyny-i-domowe-sposoby",
+            "title": "Suchość oka — przyczyny i domowe sposoby",
+            "excerpt": (
+                "Pieczenie, uczucie piasku pod powieką, zaczerwienienie pod koniec "
+                "dnia — suchość oka to jedna z najczęstszych dolegliwości u osób "
+                "pracujących przy ekranie. Podpowiadamy, co realnie pomaga."
+            ),
+            "content": (
+                "<p>Suchość oka pojawia się, gdy film łzowy nie nawilża "
+                "powierzchni oka wystarczająco długo lub skutecznie — a rzadsze "
+                "mruganie przy pracy przy ekranie tylko to pogłębia.</p>"
+                "<h2>Skąd się bierze</h2>"
+                "<p>Długi czas przed ekranem, klimatyzacja, ogrzewanie, niektóre "
+                "soczewki kontaktowe i wiek — to najczęstsze czynniki.</p>"
+                "<h2>Domowe sposoby</h2>"
+                "<ul>"
+                "<li>Świadome, częstsze mruganie przy pracy przy komputerze</li>"
+                "<li>Krople nawilżające bez konserwantów</li>"
+                "<li>Nawilżacz powietrza w pomieszczeniu, w którym pracujesz</li>"
+                "</ul>"
+                "<h2>Kiedy to już nie jest „zwykłe zmęczenie”</h2>"
+                "<p>Jeśli dolegliwości nie ustępują mimo tych zmian, warto "
+                "skonsultować się z optometrystą — przyczyną może być stan "
+                "wymagający leczenia, nie tylko nawilżania.</p>"
+            ),
+            "cover_image_alt": "Osoba pocierająca zmęczone oczy przy biurku z komputerem",
+            "meta_title": "Suchość oka — przyczyny i domowe sposoby | okowFormie",
+            "meta_description": (
+                "Pieczenie i uczucie piasku pod powieką? Poznaj najczęstsze "
+                "przyczyny suchości oka i sprawdzone domowe sposoby, które realnie "
+                "przynoszą ulgę."
+            ),
+            "published_days_ago": 5,
+        },
+    },
+    {
+        "pl": {
+            "slug": "soczewki-jednodniowe-czy-miesieczne",
+            "title": "Soczewki jednodniowe czy miesięczne — co wybrać",
+            "excerpt": (
+                "Wygoda jednorazówek czy niższy koszt soczewek miesięcznych? "
+                "Porównujemy oba warianty pod kątem higieny, stylu życia i "
+                "budżetu."
+            ),
+            "content": (
+                "<p>Wybór między soczewkami jednodniowymi a miesięcznymi to "
+                "kompromis między wygodą, higieną a kosztem — nie ma jednej "
+                "słusznej odpowiedzi dla wszystkich.</p>"
+                "<h2>Higiena i wygoda</h2>"
+                "<p>Jednodniówki wymagają najmniej pielęgnacji — zakładasz nową "
+                "parę każdego dnia, bez płynów i pojemniczków. To dobry wybór "
+                "przy alergiach czy nieregularnym noszeniu.</p>"
+                "<h2>Koszt w dłuższej perspektywie</h2>"
+                "<p>Soczewki miesięczne przy codziennym noszeniu zwykle wychodzą "
+                "taniej, ale wymagają systematycznej pielęgnacji i wymiany "
+                "pojemniczka.</p>"
+                "<h2>Dla kogo które rozwiązanie</h2>"
+                "<p>Przy sporcie, podróżach czy nieregularnym trybie życia "
+                "lepiej sprawdzają się jednodniówki. Przy codziennym, "
+                "regularnym noszeniu — miesięczne.</p>"
+            ),
+            "cover_image_alt": (
+                "Dwa opakowania soczewek kontaktowych — jednodniowych i "
+                "miesięcznych — obok siebie"
+            ),
+            "meta_title": "Soczewki jednodniowe czy miesięczne | okowFormie",
+            "meta_description": (
+                "Jednorazówki czy soczewki miesięczne? Porównanie higieny, "
+                "wygody i kosztów, które pomoże dobrać wariant dopasowany do "
+                "Twojego stylu życia."
+            ),
+            "published_days_ago": 4,
+        },
+    },
+    {
+        "pl": {
+            "slug": "okulary-przeciwsloneczne-filtr-uv",
+            "title": "Okulary przeciwsłoneczne z filtrem UV — na co zwrócić uwagę",
+            "excerpt": (
+                "Ciemne szkła to nie to samo co ochrona przed UV. Wyjaśniamy, jak "
+                "sprawdzić realny filtr w okularach przeciwsłonecznych i dlaczego "
+                "ma to znaczenie także zimą."
+            ),
+            "content": (
+                "<p>Im ciemniejsze szkła, tym bardziej rozszerzają się źrenice — "
+                "a jeśli okulary nie mają realnego filtra UV, do oka trafia "
+                "<strong>więcej</strong> promieniowania, nie mniej.</p>"
+                "<h2>Ciemność szkła to nie filtr UV</h2>"
+                "<p>Kolor i przyciemnienie szkła nie mówią nic o ochronie przed "
+                "promieniowaniem UV — to dwie osobne cechy.</p>"
+                "<h2>Jak sprawdzić realną ochronę</h2>"
+                "<p>Szukaj oznaczenia UV400 — to gwarancja blokowania promieni "
+                "do długości fali 400 nm, czyli całego zakresu szkodliwego dla "
+                "oka.</p>"
+                "<h2>Dlaczego UV szkodzi także zimą</h2>"
+                "<p>Śnieg odbija nawet do 80% promieniowania UV — dlatego okulary "
+                "z filtrem mają sens również w górach zimą, nie tylko latem nad "
+                "wodą.</p>"
+            ),
+            "cover_image_alt": "Okulary przeciwsłoneczne leżące na stole w słonecznym świetle",
+            "meta_title": "Okulary przeciwsłoneczne z filtrem UV | okowFormie",
+            "meta_description": (
+                "Ciemne szkła to nie to samo co ochrona przed UV. Sprawdź, jak "
+                "rozpoznać realny filtr w okularach przeciwsłonecznych i dlaczego "
+                "liczy się cały rok."
+            ),
+            "published_days_ago": 3,
+        },
+    },
+    {
+        "pl": {
+            "slug": "zmeczenie-oczu-praca-przy-komputerze",
+            "title": "Zmęczenie oczu przy pracy przy komputerze",
+            "excerpt": (
+                "Piekące, suche, zmęczone oczy pod koniec dnia pracy przy ekranie "
+                "to nie przypadek. Pokazujemy proste nawyki, które realnie "
+                "odciążają wzrok."
+            ),
+            "content": (
+                "<p>Przy pracy przy ekranie mrugamy nawet o połowę rzadziej niż "
+                "zwykle — to jeden z głównych powodów zmęczenia wzroku pod "
+                "koniec dnia.</p>"
+                "<h2>Zasada 20-20-20</h2>"
+                "<p>Co 20 minut spójrz na coś oddalonego o co najmniej 20 stóp "
+                "(ok. 6 metrów) przez 20 sekund — to najprostszy nawyk, który "
+                "realnie odciąża oczy.</p>"
+                "<h2>Ustawienie stanowiska pracy</h2>"
+                "<ul>"
+                "<li>Górna krawędź monitora na wysokości oczu lub niżej</li>"
+                "<li>Odległość od ekranu ok. 50–70 cm</li>"
+                "<li>Ograniczenie odblasków i zbyt jaskrawego podświetlenia</li>"
+                "</ul>"
+            ),
+            "cover_image_alt": "Osoba pracująca przy dwóch monitorach w biurze",
+            "meta_title": "Zmęczenie oczu przy pracy przy komputerze | okowFormie",
+            "meta_description": (
+                "Piekące i zmęczone oczy po dniu przy ekranie? Poznaj zasadę "
+                "20-20-20 i proste zmiany w ustawieniu stanowiska, które "
+                "odciążają wzrok."
+            ),
+            "published_days_ago": 2,
+        },
+    },
+    {
+        "pl": {
+            "slug": "keratokonus-objawy-i-leczenie",
+            "title": "Keratokonus — objawy i leczenie",
+            "excerpt": (
+                "Postępujące pogorszenie widzenia mimo nowych okularów bywa "
+                "sygnałem keratokonusu — stożkowatego zniekształcenia rogówki. "
+                "Wyjaśniamy, jak się go rozpoznaje i leczy."
+            ),
+            "content": (
+                "<p><strong>Keratokonus</strong> to postępujące ścieńczenie i "
+                "stożkowate wygięcie rogówki, które zniekształca obraz "
+                "docierający do siatkówki.</p>"
+                "<h2>Pierwsze objawy</h2>"
+                "<ul>"
+                "<li>Coraz częstsza zmiana mocy okularów bez wyraźnej poprawy</li>"
+                "<li>Podwójne widzenie lub „smugi” wokół świateł</li>"
+                "<li>Rosnąca wrażliwość na światło</li>"
+                "</ul>"
+                "<h2>Jak wygląda leczenie</h2>"
+                "<p>We wczesnym stadium pomagają soczewki twarde, dobrze "
+                "dopasowane do zniekształconej rogówki. Postęp choroby można "
+                "zatrzymać zabiegiem cross-linkingu — usztywnieniem rogówki przy "
+                "użyciu promieniowania UV i witaminy B2.</p>"
+            ),
+            "cover_image_alt": "Badanie topografii rogówki w gabinecie optometrycznym",
+            "meta_title": "Keratokonus — objawy i leczenie | okowFormie",
+            "meta_description": (
+                "Coraz częstsza zmiana mocy okularów mimo braku poprawy "
+                "widzenia? Sprawdź, czym jest keratokonus, jak go rozpoznać i "
+                "jak wygląda leczenie."
+            ),
+            "published_days_ago": 1,
+        },
+    },
+    {
+        "pl": {
+            "slug": "badanie-wzroku-seniora-co-warto-wiedziec",
+            "title": "Badanie wzroku u seniora — co warto wiedzieć",
+            "excerpt": (
+                "Zaćma, jaskra czy zwyrodnienie plamki żółtej rozwijają się "
+                "często bezobjawowo. Tłumaczymy, jak często badać wzrok po 60. "
+                "roku życia i na co zwrócić uwagę."
+            ),
+            "content": (
+                "<p>Wiele chorób oczu związanych z wiekiem rozwija się powoli i "
+                "bezobjawowo — regularne badanie to jedyny sposób, żeby wykryć "
+                "je odpowiednio wcześnie.</p>"
+                "<h2>Jak często badać wzrok po 60. roku życia</h2>"
+                "<p>Zalecane badanie kontrolne co 12 miesięcy, nawet bez "
+                "wyraźnych dolegliwości.</p>"
+                "<h2>Na co zwrócić uwagę</h2>"
+                "<ul>"
+                "<li>Zamglone lub „zamgloną” widzenie (możliwa zaćma)</li>"
+                "<li>Zawężenie pola widzenia (możliwa jaskra)</li>"
+                "<li>Zniekształcenie linii prostych (możliwe zwyrodnienie "
+                "plamki)</li>"
+                "</ul>"
+                "<h2>Rola regularnej kontroli</h2>"
+                "<p>Wczesne wykrycie w wielu przypadkach pozwala zatrzymać lub "
+                "spowolnić postęp choroby — dlatego regularna kontrola ma "
+                "większe znaczenie niż reagowanie dopiero na wyraźne objawy.</p>"
+            ),
+            "cover_image_alt": "Starsza osoba podczas badania wzroku u optometrysty",
+            "meta_title": "Badanie wzroku u seniora — co warto wiedzieć | okowFormie",
+            "meta_description": (
+                "Zaćma i jaskra rozwijają się często bezobjawowo. Sprawdź, jak "
+                "często badać wzrok po 60. roku życia i jakie sygnały nie "
+                "powinny czekać do kontroli."
+            ),
+            "published_days_ago": 0,
+        },
+    },
 )
 
 
