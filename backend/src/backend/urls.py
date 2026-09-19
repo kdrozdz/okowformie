@@ -25,4 +25,5 @@ urlpatterns = [
         name="api-docs",
     ),
     path("api/v1/", include("blog.urls")),
+    path("api/v1/", include("about.urls")),
 ]

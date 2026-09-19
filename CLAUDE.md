@@ -36,6 +36,10 @@ Monorepo, backend i frontend wdrażane niezależnie.
 - `/docs/decisions/` — jeden plik na decyzję architektoniczną/projektową, format w `docs/decisions/README.md`. Sprawdź tu przed zmianą czegoś, co mogło już zostać rozstrzygnięte.
 - `/docs/tasks/` — plan bieżącego taska, aktualizowany na bieżąco, żeby wznowić pracę po resecie sesji bez odtwarzania kontekstu. Format w `docs/tasks/README.md`.
 
+## Workflow Git
+
+Każdy task dostaje własny branch, odbity z `dev` — nazwa zgodna z plikiem planu w `/docs/tasks/` (np. `9-strona-o-mnie` dla `docs/tasks/9-strona-o-mnie.md`). Cała praca nad taskiem (kod, migracje, testy, aktualizacje planu) dzieje się na tym branchu, **nigdy bezpośrednio na `dev`**. Merge do `dev` dopiero po zakończeniu — checklista w pliku taska odhaczona, `/check` zielone, review (`qa-agent` + `/code-review`) zamknięte.
+
 ## Komendy
 
 ```bash

@@ -18,7 +18,7 @@ from core.constants import PublicationStatus as PostStatus
 
 __all__ = [
     "Language",
-    "PostStatus",
+    "PostStatus",logo.png
     "PUBLIC_STATUS",
     "META_TITLE_MAX_LENGTH",
     "META_DESCRIPTION_MIN_LENGTH",
