@@ -1,0 +1,149 @@
+# Lokalne środowisko dev dla monorepo (Next.js + Django/DRF).
+# NIE jest to konfiguracja produkcyjna/deploy — patrz
+# `docs/decisions/2026-09-19-hosting-cyberfolks-vps.md` dla docelowego hostingu.
+#
+# Użycie:
+#   cp env.example .env   # opcjonalne — wszystkie zmienne mają devowe defaulty
+#   docker compose up -d
+#   docker compose ps     # poczekaj aż wszystkie usługi będą "healthy"
+#
+# Sekrety: żadna wartość poniżej nie jest prawdziwym sekretem — to devowe
+# defaulty dla lokalnej bazy/cache widocznej wyłącznie w wewnętrznej sieci
+# compose. W produkcji wszystkie zmienne pochodzą z hostingu, nigdy z repo.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-backend}
+      POSTGRES_USER: ${POSTGRES_USER:-backend}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Nie wystawiony na hosta celowo — mniejsza powierzchnia nawet lokalnie.
+    # Debug z hosta: `docker compose exec db psql -U backend -d backend`.
+    # Potrzebujesz GUI (TablePlus/pgAdmin) na hoście? Odkomentuj:
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  cache:
+    image: redis:7-alpine
+    # Bez trwałego wolumenu i bez `--appendonly yes` celowo: to cache Django
+    # (django-redis), nie magazyn danych — utrata zawartości przy restarcie
+    # jest tanim, akceptowalnym kosztem w dev. Jeśli w przyszłości Redis
+    # zacznie pełnić rolę brokera (np. Celery, gdzie utrata zadań ma cenę),
+    # rewizja tej decyzji jest zasadna.
+    # Nie wystawiony na hosta z tego samego powodu co `db`.
+    # ports:
+    #   - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    # Migracje jawnie jako osobny krok PRZED startem serwera deweloperskiego,
+    # nie ukryte w `CMD` obrazu — zgodnie z regułą infra-agenta. Widoczne
+    # tutaj, w IaC, kontrolowalne bez rebuildu obrazu.
+    #
+    # Decyzja ws. konfliktu z `backend/Dockerfile`: target `runtime` (produkcja)
+    # ma `migrate` wpisany w `CMD` obrazu — to świadoma decyzja backend-agenta
+    # dla uproszczenia przy jednym serwisie web w fazie 1, udokumentowana tam
+    # jako tymczasowa (do przeniesienia do osobnego kroku deployu przy
+    # skalowaniu). Nie zmieniam `backend/Dockerfile` — to nie mój zakres i nie
+    # ten task. Ten override dotyczy WYŁĄCZNIE targetu `dev` używanego przez
+    # ten plik compose (`CMD` targetu `dev` w Dockerfile to sam `runserver`,
+    # bez migrate) i czyni lokalny dev użyteczny od razu po `up`, spełniając
+    # przy tym regułę "migracje jako osobny krok" w miejscu, gdzie realnie
+    # mam na to wpływ. Prawdziwy pipeline CI/CD z osobnym krokiem migracji
+    # przed deployem na Cyberfolks VPS to osobne zadanie (poza tym compose).
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-dev-only-do-not-use-in-production}
+      DEBUG: ${DEBUG:-True}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000}
+      ADMIN_URL: ${ADMIN_URL:-panel-redakcyjny/}
+      POSTGRES_DB: ${POSTGRES_DB:-backend}
+      POSTGRES_USER: ${POSTGRES_USER:-backend}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      # Host/port/Redis URL są topologią tej sieci compose, nie sekretem ani
+      # wartością do nadpisania per-dev — hardkodowane celowo, żeby literówka
+      # w .env (np. POSTGRES_HOST=localhost) nie ubiła połączenia z bazą po
+      # cichu. `db`/`cache` to nazwy usług poniżej, rozwiązywane przez DNS
+      # wewnętrznej sieci compose.
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://cache:6379/0
+    volumes:
+      - ./backend:/app
+      # Wolumen na .venv: chroni venv zbudowany w kontenerze (Linux, binarki
+      # psycopg itd.) przed nadpisaniem przez bind-mount hosta (macOS venv
+      # spod `./backend/.venv` jest binarnie niekompatybilny z kontenerem).
+      - backend-venv:/app/.venv
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    healthcheck:
+      # `python -c` zamiast `curl`/`wget` — obraz `python:3.14-slim` ich nie
+      # ma, a doinstalowywanie tylko pod healthcheck to zbędna zależność.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      # `next dev` czyta `NEXT_PUBLIC_*` z env na żywo (w przeciwieństwie do
+      # `next build`, które je wypieka) — wystarczy `environment:`, bez ARG
+      # buildowego (target `dev` w `frontend/Dockerfile` go nie deklaruje).
+      # Wartość celowo wskazuje na host (`localhost:8000`), nie na nazwę
+      # usługi docker (`http://backend:8000`): to URL trafiający do bundla
+      # klienckiego, więc musi być wywoływalny przez przeglądarkę na hoście,
+      # która nie jest częścią sieci compose.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    volumes:
+      - ./frontend:/app
+      # Analogicznie do `backend-venv`: chroni `node_modules` i `.next`
+      # zbudowane w kontenerze przed nadpisaniem przez bind-mount hosta.
+      - frontend-node-modules:/app/node_modules
+      - frontend-next-cache-v2:/app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      # `node -e` z globalnym `fetch` (Node 20+) zamiast `curl`/`wget` —
+      # obraz `node:20-alpine` ich nie ma.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
+
+volumes:
+  postgres-data:
+  backend-venv:
+  frontend-node-modules:
+  frontend-next-cache-v2:
