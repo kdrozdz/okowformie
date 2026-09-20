@@ -85,10 +85,25 @@ class PostGeneratorAdmin(admin.ModelAdmin):
     """
 
     def has_module_permission(self, request: HttpRequest) -> bool:
-        return request.user.has_perm("blog.add_post")
+        return self._can_generate(request)
 
     def has_view_permission(self, request: HttpRequest, obj: Any = None) -> bool:
-        return request.user.has_perm("blog.add_post")
+        return self._can_generate(request)
+
+    @staticmethod
+    def _can_generate(request: HttpRequest) -> bool:
+        """Generowanie wymaga `blog.add_post` **i** `blog.change_post`.
+
+        Sam `add_post` nie wystarczy: sukces zawsze przekierowuje na
+        `admin:blog_post_change`, który wymaga `change_post`/`view_post`
+        (`has_view_or_change_permission` na `PostAdmin`). Konto z samym
+        `add_post` wygenerowałoby post i trafiłoby na `403` zaraz po
+        redirect — dostęp do tej zakładki ma więc sens tylko dla konta,
+        które i tak może dokończyć pracę (przejrzeć/poprawić szkic).
+        """
+        return request.user.has_perm("blog.add_post") and request.user.has_perm(
+            "blog.change_post"
+        )
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False

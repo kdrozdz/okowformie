@@ -149,6 +149,25 @@ def test_get_bez_uprawnienia_zwraca_403(
     assert response.status_code == 403
 
 
+def test_get_z_samym_add_post_bez_change_post_zwraca_403(
+    client: Any, settings: Any, django_user_model: Any
+) -> None:
+    """`add_post` bez `change_post` to za mało — sukces generowania i tak
+    przekierowałby na `admin:blog_post_change`, którego to konto nie mogłoby
+    otworzyć (`ai_content.admin.PostGeneratorAdmin._can_generate`)."""
+    user = django_user_model.objects.create_user(
+        username="staff-tylko-add-post", password="haslo-testowe-123", is_staff=True
+    )
+    user.user_permissions.add(
+        Permission.objects.get(content_type__app_label="blog", codename="add_post")
+    )
+    client.force_login(user)
+
+    response = client.get(_post_generator_url(settings))
+
+    assert response.status_code == 403
+
+
 def test_post_z_sukcesem_tworzy_post_i_przekierowuje_z_komunikatem(
     client: Any,
     settings: Any,
@@ -177,10 +196,10 @@ def test_post_z_sukcesem_tworzy_post_i_przekierowuje_z_komunikatem(
     assert response.status_code == 302
     assert response.url == f"/{settings.ADMIN_URL}blog/post/{post.pk}/change/"
 
-    # Konto ma tylko `blog.add_post` (żeby test odzwierciedlał minimalne
-    # uprawnienia z reszty pliku), więc `follow=True` na redirect do edycji
-    # posta dałby `403` niezależny od tego, co sprawdzamy — czytamy
-    # zakolejkowany komunikat wprost z `request._messages`.
+    # Czytamy zakolejkowany komunikat wprost z `request._messages`, zamiast
+    # `follow=True` na redirect — nie testujemy tu zachowania widoku edycji
+    # posta (`blog.admin.PostAdmin`), tylko że `PostGeneratorAdmin` zapisał
+    # właściwy komunikat.
     messages = [str(message) for message in get_messages(response.wsgi_request)]
     assert len(messages) == 1
     assert f"/{settings.ADMIN_URL}blog/post/{post.pk}/change/" in messages[0]

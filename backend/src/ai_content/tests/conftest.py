@@ -61,12 +61,22 @@ def mock_generated_content() -> GeneratedPostContent:
 
 @pytest.fixture
 def staff_with_add_post_permission(django_user_model: Any) -> Any:
-    """Staff z uprawnieniem `blog.add_post` — dostęp do zakładki „Post z AI”."""
+    """Staff z uprawnieniami `blog.add_post` + `blog.change_post` — dostęp do
+    zakładki „Post z AI”.
+
+    Oba uprawnienia naraz, nie tylko `add_post`: sukces generowania zawsze
+    przekierowuje na `admin:blog_post_change`, który wymaga `change_post`
+    (`ai_content.admin.PostGeneratorAdmin._can_generate`) — samo `add_post`
+    wpuściłoby na formularz, ale zostawiłoby konto na `403` zaraz po
+    wygenerowaniu posta.
+    """
     user = django_user_model.objects.create_user(
         username="redaktorka-ai", password="haslo-testowe-123", is_staff=True
     )
     user.user_permissions.add(
-        Permission.objects.get(content_type__app_label="blog", codename="add_post")
+        *Permission.objects.filter(
+            content_type__app_label="blog", codename__in=["add_post", "change_post"]
+        )
     )
     return user
 
