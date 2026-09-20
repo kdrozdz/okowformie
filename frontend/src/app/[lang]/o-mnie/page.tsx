@@ -24,6 +24,13 @@ export async function generateMetadata({ params }: AboutPageProps): Promise<Meta
   }
   const xDefault = languages.pl ?? Object.values(languages)[0];
 
+  // `about.meta_title` jest celowo nazwą marki ("Oko w Formie" — decyzja
+  // treściowa, karta przeglądarki ma pokazywać markę, nie nazwisko autorki).
+  // Karta social/Twitter to inny kontekst: pokazana obok linku, nie w pasku
+  // zakładek, więc powtórzenie samej nazwy marki traci tam sens odróżniający
+  // (SEO/GEO) — budujemy osobny, opisowy tytuł z pól, które faktycznie mamy.
+  const socialTitle = about.headline ? `${about.full_name} — ${about.headline}` : about.full_name;
+
   return {
     title: about.meta_title,
     description: about.meta_description,
@@ -33,14 +40,14 @@ export async function generateMetadata({ params }: AboutPageProps): Promise<Meta
     },
     openGraph: {
       type: "profile",
-      title: about.meta_title,
+      title: socialTitle,
       description: about.meta_description,
       url: `/${lang}/o-mnie`,
       images: about.photo ? [{ url: about.photo, alt: about.photo_alt }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
-      title: about.meta_title,
+      title: socialTitle,
       description: about.meta_description,
       images: about.photo ? [about.photo] : undefined,
     },

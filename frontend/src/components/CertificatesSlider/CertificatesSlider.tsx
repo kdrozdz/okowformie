@@ -99,8 +99,14 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
 
       <div className={styles.slider} ref={sliderRef}>
         {certificates.map((certificate, index) => (
+          // Index jako klucz: `Certificate` z API nie ma `id`, a
+          // `name`+`issued_year` nie ma gwarancji unikalności (np. powtórzony
+          // kurs w innym roku o tej samej nazwie). Bezpieczne tutaj — lista
+          // to statyczny prop z serwera, nie zmienia kolejności ani nie
+          // wstawia/usuwa elementów w trakcie życia komponentu po stronie
+          // klienta (`.claude/commands/review.md` uwaga z /code-review).
           <button
-            key={`${certificate.name}-${certificate.issued_year}`}
+            key={index}
             type="button"
             className={styles.certThumb}
             onClick={() => open(index)}
