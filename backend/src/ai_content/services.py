@@ -34,7 +34,7 @@ class PostGenerationError(Exception):
     """
 
 
-def _build_system_prompt(topic: str, local_focus: str) -> str:
+def _build_system_prompt(topic: str, local_focus: str, extra_instructions: str) -> str:
     """Zbuduj prompt sterujący generowaniem `GeneratedPostContent`.
 
     Allowlista tagów HTML dla `content` pochodzi z `core.sanitization.
@@ -48,9 +48,15 @@ def _build_system_prompt(topic: str, local_focus: str) -> str:
     model; treść i tak zostanie zsanityzowana tą samą allowlistą po zapisie,
     więc nawet gdyby model zignorował instrukcję, nic ponad `ALLOWED_TAGS`
     nie przejdzie dalej.
+
+    `extra_instructions` (`AIProviderSettings.extra_instructions`, edytowalne
+    w zakładce „Ustawienia AI") doklejane jest na końcu promptu, tylko gdy
+    niepuste — persona/ton/wytyczne SEO nie są zaszyte w tym kodzie, redaktor
+    może je zmienić albo wyczyścić (`docs/tasks/12-generator-postow-ai.md`,
+    sekcja „5a").
     """
     allowed_tags = ", ".join(sorted(ALLOWED_TAGS))
-    return (
+    prompt = (
         "Jesteś redaktorem SEO polskiego bloga optometrycznego (soczewki "
         "kontaktowe, okulary, zdrowie wzroku, porady optyczne). Piszesz "
         "wyłącznie po polsku, rzeczowo i przystępnie dla czytelnika bez "
@@ -73,6 +79,9 @@ def _build_system_prompt(topic: str, local_focus: str) -> str:
         "wybrane słowa kluczowe/tytuł/opis SEO są trafne — trafia tylko do "
         "komunikatu w panelu redakcyjnym, nie do treści posta."
     )
+    if extra_instructions.strip():
+        prompt += f"\n\nDodatkowe wytyczne od redakcji:\n{extra_instructions}"
+    return prompt
 
 
 def generate_post_content(
@@ -101,7 +110,9 @@ def generate_post_content(
             timeout=60,
         )
         structured_chat = chat.with_structured_output(GeneratedPostContent)
-        result = structured_chat.invoke(_build_system_prompt(topic, local_focus))
+        result = structured_chat.invoke(
+            _build_system_prompt(topic, local_focus, ai_settings.extra_instructions)
+        )
 
         # `with_structured_output` jest typowany ogólnie jako
         # `Runnable[..., dict[str, Any] | BaseModel]`, bo metoda przyjmuje

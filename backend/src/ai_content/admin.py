@@ -14,8 +14,10 @@ Dwie rejestracje tego samego rekordu (`.claude/rules/content-admin.md` +
 
 from typing import Any
 
+from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -32,7 +34,10 @@ from .services import (
 
 @admin.register(AIProviderSettings)
 class AIProviderSettingsAdmin(admin.ModelAdmin):
-    fields = ("provider", "model_name", "temperature", "max_output_tokens")
+    fields = ("provider", "model_name", "temperature", "max_output_tokens", "extra_instructions")
+    formfield_overrides = {
+        models.TextField: {"widget": forms.Textarea(attrs={"rows": 4})},
+    }
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         """Singleton: drugi rekord nigdy nie może powstać z panelu.

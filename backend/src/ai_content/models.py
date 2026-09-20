@@ -58,6 +58,19 @@ class AIProviderSettings(models.Model):
         validators=[MinValueValidator(1)],
         help_text="Limit długości odpowiedzi modelu. Za niski limit może uciąć treść posta.",
     )
+    extra_instructions = models.TextField(
+        verbose_name="Dodatkowe instrukcje dla AI",
+        blank=True,
+        default=(
+            "Pisz jak doświadczony optometrysta — rzeczowo, z autorytetem. "
+            "Stosuj sprawdzone zasady SEO: jasna struktura nagłówków, odpowiedź "
+            "na intencję wyszukiwania, zasady E-E-A-T."
+        ),
+        help_text=(
+            "Doklejane do promptu przy każdym generowaniu — persona, ton, "
+            "wytyczne SEO. Możesz zostawić puste albo zmienić na własne."
+        ),
+    )
 
     class Meta:
         verbose_name = "Ustawienia AI"

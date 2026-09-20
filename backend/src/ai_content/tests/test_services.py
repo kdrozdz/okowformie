@@ -24,15 +24,29 @@ pytestmark = pytest.mark.django_db
 
 
 def test_prompt_zawiera_temat() -> None:
-    prompt = _build_system_prompt("Soczewki kontaktowe dla astygmatyków", "Wrocław, Polska")
+    prompt = _build_system_prompt("Soczewki kontaktowe dla astygmatyków", "Wrocław, Polska", "")
 
     assert "Soczewki kontaktowe dla astygmatyków" in prompt
 
 
 def test_prompt_zawiera_fokus_lokalny() -> None:
-    prompt = _build_system_prompt("Dobór okularów", "Kraków, Polska")
+    prompt = _build_system_prompt("Dobór okularów", "Kraków, Polska", "")
 
     assert "Kraków, Polska" in prompt
+
+
+def test_prompt_zawiera_dodatkowe_instrukcje_gdy_niepuste() -> None:
+    prompt = _build_system_prompt(
+        "Dobór okularów", "Kraków, Polska", "Pisz jak doświadczony optometrysta."
+    )
+
+    assert "Pisz jak doświadczony optometrysta." in prompt
+
+
+def test_prompt_bez_sekcji_dodatkowych_instrukcji_gdy_puste() -> None:
+    prompt = _build_system_prompt("Dobór okularów", "Kraków, Polska", "")
+
+    assert "Dodatkowe wytyczne od redakcji" not in prompt
 
 
 # --- generate_post_content ---------------------------------------------------
