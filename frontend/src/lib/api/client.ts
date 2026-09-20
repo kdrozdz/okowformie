@@ -21,9 +21,11 @@ function getApiBaseUrl(): string {
 // Rewalidacja czasowa zamiast SSR na każde żądanie — webhook publikacji z
 // panelu redakcyjnego nie istnieje jeszcze (`.claude/rules/performance.md`
 // dopuszcza obie strategie; webhook to osobny task, gdy panel tego
-// potrzebuje). 60s to rozsądny kompromis świeżość/obciążenie API dla bloga
-// aktualizowanego kilka razy w tygodniu, nie w czasie rzeczywistym.
-const REVALIDATE_SECONDS = 60;
+// potrzebuje). 15s to kompromis świeżość/obciążenie API dla bloga
+// aktualizowanego kilka razy w tygodniu — krócej niż pierwotne 60s, bo
+// redaktor sprawdzający własną, świeżo zapisaną zmianę w panelu nie
+// powinien czekać prawie minutę, żeby zobaczyć efekt na stronie.
+const REVALIDATE_SECONDS = 15;
 
 /**
  * `null` = zasób nie istnieje (404) — wywołujący decyduje, czy to `notFound()`
