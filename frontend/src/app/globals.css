@@ -1,4 +1,6 @@
-/* Paleta i typografia 1:1 z `frontend/mockups/szkielet-frontendu.html`. */
+/* Paleta i typografia 1:1 ze statycznego mockupu HTML (zaakceptowany
+   design, usunięty z repo po zbudowaniu realnych komponentów — historia
+   w `git log` na branchu `10-live-frontend-nextjs`). */
 :root {
   --teal: #2e8b90;
   --indigo: #5b4fa0;

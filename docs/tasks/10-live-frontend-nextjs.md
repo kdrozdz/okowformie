@@ -27,7 +27,7 @@
 
 - **[P0, wydajność/SEO] `headers()` w `app/layout.tsx` wyłącza SSG/ISR dla całego drzewa tras.** Root layout musi znać `lang` pod `<html lang>`, ale czyta go przez `headers()` (nagłówek `x-lang` wstrzyknięty przez `proxy.ts`) — Dynamic API w layout opt-outuje **całą** aplikację z static generation, mimo że `[lang]/posty`, `[lang]/posty/[slug]`, `[lang]/o-mnie` mają `generateStaticParams`. Sprzeczne z `performance.md` (SSG/ISR, LCP < 2.5s, Lighthouse ≥ 90). Do zbadania: czy `[lang]/layout.tsx` może stać się prawdziwym root layoutem (branie `lang` z `params`, nie z `headers()`) teraz, gdy `/` jest w całości obsługiwane przez `proxy.ts` (redirect) i nie potrzebuje własnego `page.tsx` poza `[lang]`.
 - **[a11y] Lightbox certyfikatów (`role="dialog" aria-modal="true"`) nie ma pułapki fokusu.** Tab wyprowadza fokus poza modal (do nawigacji w tle) mimo że overlay wciąż zasłania ekran — narusza wzorzec WAI-ARIA dla modali.
-- **Mockupy w `frontend/mockups/` (~1922 linii) zostają w repo po zbudowaniu realnych komponentów.** Do decyzji z użytkownikiem: usunąć (historia w git i tak je zachowuje) czy przenieść pod `/docs` jako świadomie zachowana dokumentacja projektowa.
+- [x] **Mockupy usunięte** (`git rm -r frontend/mockups`) — decyzja użytkownika: usunąć, historia w `git log` na tym branchu je zachowuje. Komentarz w `globals.css` odsyłający do pliku zaktualizowany, żeby nie wskazywał na nieistniejącą ścieżkę.
 
 ## Decyzje po drodze
 
