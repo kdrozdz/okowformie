@@ -41,22 +41,26 @@ const baseAbout: About = {
 
 describe("AboutSection", () => {
   it("dopasowuje snapshot ze zdjęciem i certyfikatami", () => {
-    const { container } = render(<AboutSection about={baseAbout} lang="pl" />);
+    // `asFragment()`, nie `container.firstChild`: komponent renderuje
+    // Fragment z kilkoma sąsiadującymi korzeniami (`<h1>`, `div.about`,
+    // opcjonalnie `div.courses`) — `.firstChild` łapałby tylko `<h1>` i
+    // milcząco pomijał resztę markupu, którą ten test ma pokrywać.
+    const { asFragment } = render(<AboutSection about={baseAbout} lang="pl" />);
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it("dopasowuje snapshot bez zdjęcia (`photo === null` — placeholder SVG zamiast `<Image>`)", () => {
     const about: About = { ...baseAbout, photo: null, photo_alt: "" };
-    const { container } = render(<AboutSection about={about} lang="pl" />);
+    const { asFragment } = render(<AboutSection about={about} lang="pl" />);
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   it("dopasowuje snapshot bez certyfikatów (`certificates: []` — sekcja kursów/certyfikatów całkowicie pominięta)", () => {
     const about: About = { ...baseAbout, certificates: [] };
-    const { container } = render(<AboutSection about={about} lang="pl" />);
+    const { asFragment } = render(<AboutSection about={about} lang="pl" />);
 
-    expect(container.firstChild).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 });
