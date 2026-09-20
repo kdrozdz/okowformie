@@ -28,16 +28,16 @@ Ustalone w tej sesji (rozmowa brainstormingowa — nieopisane jeszcze w kodzie):
 Wzorzec do naśladowania w każdym kroku: `about` (app analogiczna do `blog`, singleton `AboutMe` 1:1 z `AIProviderSettings` niżej — `about/models.py`, `about/admin.py`, `about/tests/test_admin.py`). Referencje pól: `blog/models.py` (`PostTranslation`, `POST_CONTENT_EXTENSIONS`), `blog/constants.py` (`Language`, `PostStatus`), `core/constants.py` (limity SEO).
 
 ### 1. Zależności i szkielet aplikacji
-- [ ] backend-agent: `cd backend && uv add langchain langchain-anthropic langchain-openai langchain-xai` — nowa zależność w stacku, już zaakceptowana przez ten task (`docs/decisions/2026-09-19-langchain-osobny-task.md`), więc bez dodatkowego pytania.
-- [ ] backend-agent: nowa aplikacja `backend/src/ai_content/` — `apps.py` (`AiContentConfig`, `name = "ai_content"`, `verbose_name = "Generator treści AI"`, wzorem `blog/apps.py`), `__init__.py`, `migrations/__init__.py`.
-- [ ] backend-agent: dopisać `"ai_content"` do `INSTALLED_APPS` w `backend/src/backend/settings.py`, w sekcji „Apps domenowe”, po `"about"`.
-- [ ] backend-agent: `backend/env.example` — nowa sekcja `# --- AI (generator postów) ---` dokumentująca `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `XAI_API_KEY` jako zmienne czytane **bezpośrednio przez LangChain** (zakomentowane, bez wartości, wzorem reszty pliku); komentarz wprost: klucz nigdy nie przechodzi przez kod/ustawienia Django.
+- [x] backend-agent: `cd backend && uv add langchain langchain-anthropic langchain-openai langchain-xai` — nowa zależność w stacku, już zaakceptowana przez ten task (`docs/decisions/2026-09-19-langchain-osobny-task.md`), więc bez dodatkowego pytania.
+- [x] backend-agent: nowa aplikacja `backend/src/ai_content/` — `apps.py` (`AiContentConfig`, `name = "ai_content"`, `verbose_name = "Generator treści AI"`, wzorem `blog/apps.py`), `__init__.py`, `migrations/__init__.py`.
+- [x] backend-agent: dopisać `"ai_content"` do `INSTALLED_APPS` w `backend/src/backend/settings.py`, w sekcji „Apps domenowe”, po `"about"`.
+- [x] backend-agent: `backend/env.example` — nowa sekcja `# --- AI (generator postów) ---` dokumentująca `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `XAI_API_KEY` jako zmienne czytane **bezpośrednio przez LangChain** (zakomentowane, bez wartości, wzorem reszty pliku); komentarz wprost: klucz nigdy nie przechodzi przez kod/ustawienia Django.
 
 ### 2. Model i migracja
-- [ ] backend-agent: `ai_content/constants.py` — `AIProvider(models.TextChoices)`: `ANTHROPIC = "anthropic", "Anthropic (Claude)"`, `OPENAI = "openai", "OpenAI (GPT)"`, `XAI = "xai", "xAI (Grok)"`. Wartości identyczne ze stringami providera, jakich oczekuje `langchain.chat_models.init_chat_model(model_provider=...)` — świadomy wybór, nie przypadek.
-- [ ] backend-agent: `ai_content/models.py` — `AIProviderSettings(models.Model)` (zwykły model, **nie** `TranslatableModel` — konfiguracja jest niezależna od języka): `provider` (`CharField`, `choices=AIProvider`, `default=AIProvider.ANTHROPIC`), `model_name` (`CharField(max_length=100)`, bez `choices` — nazwy modeli zmieniają się częściej niż release kodu, `help_text` to tłumaczy), `temperature` (`FloatField(default=0.7, validators=[MinValueValidator(0), MaxValueValidator(2)])`), `max_output_tokens` (`PositiveIntegerField(default=4000, validators=[MinValueValidator(1)])`). Singleton 1:1 z `about.models.AboutMe`: `SINGLETON_ID: ClassVar[int] = 1`, `save()` wymusza `self.pk = SINGLETON_ID`. `verbose_name = verbose_name_plural = "Ustawienia AI"`.
-- [ ] backend-agent: w tym samym pliku `PostGenerator(AIProviderSettings)` — proxy model (`class Meta: proxy = True`), `verbose_name = verbose_name_plural = "Post z AI"`. Bez własnej tabeli w DB — dzieli tabelę z `AIProviderSettings`; służy wyłącznie do drugiej rejestracji w adminie pod innym `ModelAdmin` (patrz sekcja 4).
-- [ ] backend-agent: `uv run manage.py makemigrations ai_content` → `ai_content/migrations/0001_initial.py`, commitowana osobno od reszty kodu (`conventions.md`).
+- [x] backend-agent: `ai_content/constants.py` — `AIProvider(models.TextChoices)`: `ANTHROPIC = "anthropic", "Anthropic (Claude)"`, `OPENAI = "openai", "OpenAI (GPT)"`, `XAI = "xai", "xAI (Grok)"`. Wartości identyczne ze stringami providera, jakich oczekuje `langchain.chat_models.init_chat_model(model_provider=...)` — świadomy wybór, nie przypadek.
+- [x] backend-agent: `ai_content/models.py` — `AIProviderSettings(models.Model)` (zwykły model, **nie** `TranslatableModel` — konfiguracja jest niezależna od języka): `provider` (`CharField`, `choices=AIProvider`, `default=AIProvider.ANTHROPIC`), `model_name` (`CharField(max_length=100)`, bez `choices` — nazwy modeli zmieniają się częściej niż release kodu, `help_text` to tłumaczy), `temperature` (`FloatField(default=0.7, validators=[MinValueValidator(0), MaxValueValidator(2)])`), `max_output_tokens` (`PositiveIntegerField(default=4000, validators=[MinValueValidator(1)])`). Singleton 1:1 z `about.models.AboutMe`: `SINGLETON_ID: ClassVar[int] = 1`, `save()` wymusza `self.pk = SINGLETON_ID`. `verbose_name = verbose_name_plural = "Ustawienia AI"`.
+- [x] backend-agent: w tym samym pliku `PostGenerator(AIProviderSettings)` — proxy model (`class Meta: proxy = True`), `verbose_name = verbose_name_plural = "Post z AI"`. Bez własnej tabeli w DB — dzieli tabelę z `AIProviderSettings`; służy wyłącznie do drugiej rejestracji w adminie pod innym `ModelAdmin` (patrz sekcja 4).
+- [x] backend-agent: `uv run manage.py makemigrations ai_content` → `ai_content/migrations/0001_initial.py`, commitowana osobno od reszty kodu (`conventions.md`).
 
 ### 3. Pydantic schema i serwis generujący
 - [ ] backend-agent: `ai_content/schemas.py` — `GeneratedPostContent(pydantic.BaseModel)`: `title: str` (`max_length=200`), `excerpt: str` (`max_length=400`), `content: str` (bez limitu), `meta_title: str` (`max_length=60`), `meta_description: str` (`max_length=160`), `cover_image_alt: str` (`max_length=200`), `seo_rationale: str`. Limity 1:1 z polami `blog.models.PostTranslation`/`core.constants` — łapią przesadzone wyjście modelu już na warstwie Pydantic.
@@ -79,4 +79,15 @@ Tłumaczenie EN generowane przez AI, kolejka/async (Celery), zewnętrzne narzęd
 4. **Ten plik nie jest jeszcze scommitowany** — leży tylko w working tree na `dev` (świadomie, `git commit` robi się dopiero na wniosek). Pierwszy commit na nowym branchu powinien go objąć, wzorem `docs(tasks): plan i historia decyzji taska 11` z taska 11.
 
 ## Decyzje po drodze
-(puste — uzupełniać w miarę realizacji, jak w innych plikach `docs/tasks/`)
+
+### Sekcje 1–2 zrealizowane (2026-09-20)
+`backend-agent` dostarczył zależności LangChain (`langchain`, `langchain-anthropic`,
+`langchain-openai`, `langchain-xai`, `uv add`), szkielet aplikacji `ai_content`
+i model `AIProviderSettings` + proxy `PostGenerator`, w dwóch commitach:
+`5a948e3` (zależności + szkielet + `env.example`), `03173d6` (model + migracja).
+Zweryfikowane: `ruff check .` czyste, `mypy src` — 106 plików bez błędów,
+`manage.py check` bez zastrzeżeń, `makemigrations --dry-run` po commitach —
+brak zmian. Migracja `ai_content/migrations/0001_initial.py` potwierdzona
+ręcznie: `CreateModel` dla `AIProviderSettings` (4 pola), osobny wpis dla
+`PostGenerator` z `fields=[]` i `'proxy': True` — proxy nie tworzy nowej
+tabeli, zgodnie z decyzją #7.
