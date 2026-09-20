@@ -101,3 +101,19 @@ albo świadomie odrzucić ten pomysł.
 
 **Kontekst:** `docs/tasks/12-generator-postow-ai.md`, rozmowa po sekcji 5a
 (edytowalne instrukcje dla AI).
+
+## [otwarte] Rezydualne ryzyko: SDK dostawcy AI mógłby wpisać fragment klucza API do treści wyjątku (2026-09-20)
+`ai_content/services.py::generate_post_content` łapie `Exception` szeroko i
+loguje pełny traceback przez `logger.exception(...)` (do logu serwera, nigdy
+do usera — to działa poprawnie, zweryfikowane testem). Teoretyczne,
+niezweryfikowane ryzyko: gdyby SDK dostawcy (`langchain-anthropic`/
+`langchain-openai`/`langchain-xai`) kiedyś zwrócił błąd uwierzytelnienia z
+fragmentem klucza w treści wyjątku (np. echo nagłówka `Authorization`), ten
+fragment wylądowałby w logu serwera. Nie znaleziono takiego zachowania w
+kodzie `ai_content` — źródłem musiałaby być biblioteka trzecia, czego nie da
+się zweryfikować bez realnego wywołania z błędnym kluczem. Do rozważenia:
+log-scrubbing filter na loggerze `ai_content.services`, albo jednorazowy
+manualny test z celowo błędnym kluczem przed pierwszym produkcyjnym użyciem.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, niezależne review
+`qa-agent` (sekcja 6, Defekt #2, informational/low).
