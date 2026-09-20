@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "accounts",
     "blog",
     "about",
+    "branding",
 ]
 
 MIDDLEWARE = [
@@ -253,6 +254,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "posts": os.environ.get("BLOG_API_THROTTLE_RATE", "60/min"),
         "about": os.environ.get("ABOUT_API_THROTTLE_RATE", "60/min"),
+        "branding": os.environ.get("BRANDING_API_THROTTLE_RATE", "60/min"),
     },
 }
 

@@ -28,6 +28,7 @@ urlpatterns = [
     ),
     path("api/v1/", include("blog.urls")),
     path("api/v1/", include("about.urls")),
+    path("api/v1/", include("branding.urls")),
 ]
 
 if settings.DEBUG:
