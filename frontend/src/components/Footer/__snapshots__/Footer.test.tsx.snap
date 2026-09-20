@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Footer > dopasowuje snapshot (EN) — inny słownik, ten sam markup 1`] = `
+exports[`Footer > dopasowuje snapshot (EN) — inny słownik, ten sam markup, logo z API 1`] = `
 <footer
   class="_siteFooter_acfd2c"
 >
@@ -13,7 +13,7 @@ exports[`Footer > dopasowuje snapshot (EN) — inny słownik, ten sam markup 1`]
       >
         <img
           alt=""
-          src="/logo.png"
+          src="http://backend:8000/media/branding/logo/abc123.png"
         />
         <span>
           okowFormie
@@ -51,7 +51,7 @@ exports[`Footer > dopasowuje snapshot (EN) — inny słownik, ten sam markup 1`]
 </footer>
 `;
 
-exports[`Footer > dopasowuje snapshot (PL) 1`] = `
+exports[`Footer > dopasowuje snapshot (PL) — logo z API 1`] = `
 <footer
   class="_siteFooter_acfd2c"
 >
@@ -64,7 +64,58 @@ exports[`Footer > dopasowuje snapshot (PL) 1`] = `
       >
         <img
           alt=""
-          src="/logo.png"
+          src="http://backend:8000/media/branding/logo/abc123.png"
+        />
+        <span>
+          okowFormie
+        </span>
+      </p>
+      <p
+        class="_footerTagline_acfd2c"
+      >
+        Blog o zdrowiu wzroku, terapii widzenia i optometrii.
+      </p>
+    </div>
+    <nav
+      aria-label="Sekcje strony"
+      class="_footerLinks_acfd2c"
+    >
+      <a
+        href="/pl/o-mnie"
+      >
+        O mnie
+      </a>
+      <a
+        href="/pl/posty"
+      >
+        Posty
+      </a>
+    </nav>
+  </div>
+  <div
+    class="_footerBottom_acfd2c"
+  >
+    <p>
+      © 2026 okowFormie. Wszelkie prawa zastrzeżone.
+    </p>
+  </div>
+</footer>
+`;
+
+exports[`Footer > dopasowuje snapshot z \`branding: null\` (błąd pobrania) — fallback na statyczne \`/brand/logo.png\` 1`] = `
+<footer
+  class="_siteFooter_acfd2c"
+>
+  <div
+    class="_footerTop_acfd2c"
+  >
+    <div>
+      <p
+        class="_footerBrandRow_acfd2c"
+      >
+        <img
+          alt=""
+          src="/brand/logo.png"
         />
         <span>
           okowFormie

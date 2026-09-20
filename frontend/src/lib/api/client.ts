@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Language } from "@/lib/i18n/languages";
 
-import type { About, PaginatedResponse, PostDetail, PostSummary } from "./types";
+import type { About, Branding, PaginatedResponse, PostDetail, PostSummary } from "./types";
 
 /**
  * Fetch wyłącznie server-side (Server Components, `generateMetadata`,
@@ -54,6 +54,26 @@ async function fetchApi<T>(path: string): Promise<T | null> {
 
 export function getAbout(lang: Language): Promise<About | null> {
   return fetchApi<About>(`/api/v1/${lang}/about/`);
+}
+
+// Nietłumaczone (bez `{lang}` w ścieżce) — logo i social linki są wspólne dla
+// obu wersji językowych. Endpoint zawsze zwraca `200` (pusty stan przed
+// pierwszą konfiguracją panelu to `{"logo": null, "social_links": []}`) —
+// w przeciwieństwie do `getAbout`/`getPosts` zawężamy zwracany typ do
+// `Branding` (bez `| null`), żeby `null` w `Header.tsx` mogło jednoznacznie
+// oznaczać „błąd pobrania”, a nie dwuznaczny „404 albo pusty panel”.
+export async function getBranding(): Promise<Branding> {
+  const branding = await fetchApi<Branding>(`/api/v1/branding/`);
+  if (branding === null) {
+    // Nie powinno się zdarzyć przy obecnym backendzie (patrz komentarz
+    // wyżej) — rzucamy zamiast cicho zwracać `null`, żeby wywołujący
+    // (`getBrandingSafely` w `layout.tsx`) potraktował to tak samo jak
+    // każdy inny nieoczekiwany błąd API, nie jak legalny pusty stan.
+    throw new Error(
+      `Nieoczekiwane 404 z /api/v1/branding/ — ten endpoint zawsze powinien zwracać 200.`,
+    );
+  }
+  return branding;
 }
 
 export function getPosts(

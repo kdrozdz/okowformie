@@ -11,8 +11,10 @@ import "server-only";
  * sieci compose (`http://backend:8000`). Poza Dockerem oba wskazują na ten
  * sam host, więc to wtedy no-op.
  *
- * Używaj WYŁĄCZNIE dla `<Image src>` — nigdy dla `og:image`/`twitter:image`/
- * JSON-LD, które muszą zostać publicznie osiągalne.
+ * Używaj dla `<Image src>` i dla surowego `fetch()` server-side na ten sam
+ * URL (np. `app/icon.tsx` pobierający bajty logo pod dynamiczny favicon) —
+ * nigdy dla `og:image`/`twitter:image`/JSON-LD, które muszą zostać
+ * publicznie osiągalne.
  */
 export function toOptimizableImageSrc(url: string): string {
   const internalBase = process.env.API_URL;
