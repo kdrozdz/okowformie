@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "accounts",
     "blog",
     "about",
+    "ai_content",
     "branding",
 ]
 
