@@ -86,7 +86,6 @@ Zmiana przekrojowa → `uiux-agent` (jeśli UI) → `backend-agent` → `fronten
 Nie zgaduj — zapytaj, zanim zaimplementujesz cokolwiek, co od nich zależy:
 
 - **Media/upload obrazów**: S3 jako czysty object storage vs wolumen na VPS Cyberfolks (decyzja o hostingu w `docs/decisions/2026-09-19-hosting-cyberfolks-vps.md` zostawia to pytanie otwarte).
-- **Sekrety bez AWS**: `.env` poza repo vs inne narzędzie (Vault itp.) — do ustalenia przy przepisywaniu `infra-agent` pod deploy VPS.
 - **Integracja z Instagramem**: czy w fazie 1.
 - **Kategorie/tagi**: czy w fazie 1, czy dopiero gdy przybędzie postów.
 - **Narzędzie do szkoleń online** (faza 3).
@@ -97,3 +96,4 @@ Nie zgaduj — zapytaj, zanim zaimplementujesz cokolwiek, co od nich zależy:
 - **Wielojęzyczność**: PL/EN od startu, wzorzec master + tłumaczenia — tamże.
 - **Hosting**: Cyberfolks VPS zamiast AWS — `docs/decisions/2026-09-19-hosting-cyberfolks-vps.md`.
 - **Generowanie treści przez AI (LangChain)**: osobny task, poza `7-dodanie-postu` — `docs/decisions/2026-09-19-langchain-osobny-task.md`.
+- **Sekrety bez AWS**: zmienne środowiskowe czytane bezpośrednio przez biblioteki (np. LangChain dla kluczy API dostawców AI), bez Vault/AWS Secrets Manager — `docs/decisions/2026-09-20-generator-postow-ai.md`.
