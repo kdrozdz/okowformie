@@ -1,7 +1,7 @@
 # Żywy frontend Next.js (O mnie + Posty)
 
 - **Cel:** przekształcić zaakceptowany mockup (`frontend/mockups/szkielet-frontendu.html`) w realną strukturę Next.js — realna nawigacja (nie JS-owe zakładki), dane pobierane z istniejącego publicznego API (`/api/v1/{lang}/about/`, `/api/v1/{lang}/posts/`), z fejkowymi danymi seed w bazie, żeby było co renderować.
-- **Status:** w toku
+- **Status:** gotowe — zmergowane do `dev`
 
 ## Kontekst / decyzje wejściowe
 
