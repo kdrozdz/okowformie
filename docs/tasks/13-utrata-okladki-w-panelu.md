@@ -127,22 +127,7 @@ nie CSS), do rozważenia jako osobny task.
       ręcznej weryfikacji przez użytkownika przed/po mergu.
 - [ ] Merge do `dev`
 
-### Follow-upy z `/code-review` (świadomie nieujęte w tym tasku — inne pliki/domena)
-- `about/forms.py` ma tę samą lukę co pierwotny bug ze zgłoszenia 1
-  (`photo`/`photo_alt` bez ostrzeżenia o utracie pliku) — kandydat do
-  wydzielenia współdzielonej logiki do `core` zamiast kopiowania do
-  `blog`/`about` osobno (`.claude/rules/scope.md`).
-- `AboutSection.module.css` (`.text`, ta sama treść WYSIWYG co `about.bio`)
-  nie ma analogicznych reguł dla `img`/`figure`/`figcaption` co dodane tu
-  w `PostDetail.module.css` — ten sam defekt, jeszcze nie zgłoszony na
-  `/o-mnie`.
-- `object-fit` (cover vs. contain) ustawiany niezależnie w 6+ miejscach —
-  zasada rozstrzygająca żyje tylko w tym pliku planu, nie w kodzie; warto
-  rozważyć wspólny komponent/hook, żeby kolejne miejsce nie kopiowało
-  losowej wartości z sąsiedztwa.
-- `PostAdminForm` (zgłoszenie 1, już "gotowe") ostrzega, ale nie odzyskuje
-  utraconego pliku — technicznie plik jest w `request.FILES` w momencie
-  błędu, mógłby zostać zachowany (np. tymczasowo) zamiast wymagać
-  ponownego wyboru. Świadomie zaakceptowany wcześniej jako płytsza,
-  wystarczająca poprawka — do rewizji, jeśli redaktorzy będą się dalej
-  mylić mimo ostrzeżenia.
+### Follow-upy (świadomie nieujęte w tym tasku — inne pliki/domena)
+Przeniesione do `docs/todo/TODO.md` (z `/code-review` + diagnoza favicony),
+żeby nie zniknęły z kontekstu po zamknięciu tego taska — zgodnie z nową
+regułą `.claude/rules/todo.md`.
