@@ -26,7 +26,7 @@
 }
 
 .coverImage {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .date {
@@ -70,4 +70,28 @@
 .body :global(a) {
   color: var(--indigo);
   text-decoration: underline;
+}
+
+.body :global(img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1.5rem auto;
+}
+
+.body :global(figure) {
+  margin: 1.75rem 0;
+}
+
+.body :global(figure img) {
+  margin: 0 auto;
+}
+
+.body :global(figcaption) {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-muted);
+  text-align: center;
 }

@@ -35,6 +35,7 @@ Monorepo, backend i frontend wdrażane niezależnie.
 
 - `/docs/decisions/` — jeden plik na decyzję architektoniczną/projektową, format w `docs/decisions/README.md`. Sprawdź tu przed zmianą czegoś, co mogło już zostać rozstrzygnięte.
 - `/docs/tasks/` — plan bieżącego taska, aktualizowany na bieżąco, żeby wznowić pracę po resecie sesji bez odtwarzania kontekstu. Format w `docs/tasks/README.md`.
+- `/docs/todo/` — znaleziska poza zakresem bieżącego taska (luki, dług techniczny), żeby nie zniknęły z kontekstu czatu. Format i zasada zapisu: `docs/todo/README.md` i `.claude/rules/todo.md`.
 
 ## Workflow Git
 
@@ -75,7 +76,7 @@ Zmiana przekrojowa → `uiux-agent` (jeśli UI) → `backend-agent` → `fronten
 
 ## Konfiguracja Claude Code
 
-- `.claude/rules/` — `scope.md` i `engineering-principles.md` ładują się zawsze; pozostałe mają `paths:` i wchodzą do kontekstu dopiero przy pracy nad pasującymi plikami.
+- `.claude/rules/` — `scope.md`, `engineering-principles.md` i `todo.md` ładują się zawsze; pozostałe mają `paths:` i wchodzą do kontekstu dopiero przy pracy nad pasującymi plikami.
 - `code-quality.md` przenosi kryteria review na etap pisania kodu — `/review` przez `qa-agent` zostaje jako druga para oczu, nie jako pierwsze miejsce, gdzie wychodzą błędy.
 - `.claude/agents/` — subagenci. `.claude/commands/` — slash commands. `.claude/settings.json` — uprawnienia (allow/ask/deny).
 - Nie duplikuj treści reguł w innych plikach — odsyłaj do nich ścieżką.

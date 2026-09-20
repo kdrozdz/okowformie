@@ -1,16 +1,24 @@
 """Panel redakcyjny: walidacja mówi po polsku i mówi, co zrobić."""
 
 from collections.abc import Callable
+from io import BytesIO
 from typing import Any
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image
 
 from blog.constants import Language, PostStatus
 from blog.forms import PostAdminForm
 from blog.models import Post
 
 pytestmark = pytest.mark.django_db
+
+
+def _valid_jpeg() -> SimpleUploadedFile:
+    buffer = BytesIO()
+    Image.new("RGB", (2, 2), color="red").save(buffer, format="JPEG")
+    return SimpleUploadedFile("okladka.jpg", buffer.getvalue(), content_type="image/jpeg")
 
 
 def build_form(
@@ -210,3 +218,46 @@ def test_plik_z_podmieniona_zawartoscia_pod_dozwolonym_rozszerzeniem_jest_odrzuc
 
     assert not form.is_valid()
     assert "cover_image" in form.errors
+
+
+def test_blad_na_innym_polu_ostrzega_ze_obraz_trzeba_wybrac_jeszcze_raz(author: Any) -> None:
+    """Przeglądarka czyści `<input type="file">` przy każdym ponownym pokazaniu
+    formularza — jeśli walidacja odrzuci formularz z JAKIEGOKOLWIEK innego
+    powodu, wybrany obraz i tak zniknie przy zapisie. Bez tego ostrzeżenia
+    redaktor poprawia zgłoszony błąd, zapisuje ponownie i dostaje post bez
+    okładki, nie wiedząc dlaczego (tak zniknął obraz na poście „agata")."""
+    form = build_form(author, title="", files={"cover_image": _valid_jpeg()})
+
+    assert not form.is_valid()
+    message = " ".join(form.errors["cover_image"])
+    assert "wybierz go jeszcze raz" in message
+
+
+def test_brak_alt_przy_publikacji_ostrzega_ze_obraz_trzeba_wybrac_jeszcze_raz(author: Any) -> None:
+    """Dokładna sekwencja, która zgubiła okładkę na poście „agata": obraz
+    przesłany, `cover_image_alt` puste, status od razu ustawiony na
+    „Opublikowany"."""
+    form = build_form(
+        author,
+        status=PostStatus.PUBLISHED,
+        cover_image_alt="",
+        files={"cover_image": _valid_jpeg()},
+    )
+
+    assert not form.is_valid()
+    assert "missing_cover_image_alt" in [e.code for e in form.errors.as_data()["cover_image_alt"]]
+    message = " ".join(form.errors["cover_image"])
+    assert "wybierz go jeszcze raz" in message
+
+
+def test_poprawny_formularz_z_obrazem_nie_dostaje_ostrzezenia(author: Any) -> None:
+    """Gdy formularz jest poprawny, obraz zapisuje się normalnie — bez
+    fałszywego alarmu o utracie pliku."""
+    form = build_form(
+        author, cover_image_alt="Nalewka z pigwy w słoiku.", files={"cover_image": _valid_jpeg()}
+    )
+
+    assert form.is_valid(), form.errors
+
+    post = form.save()
+    assert post.cover_image.name

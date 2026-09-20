@@ -78,6 +78,7 @@ class PostAdminForm(TranslatableModelForm):
         self._validate_slug_free(cleaned)
         self._validate_seo(cleaned)
         self._validate_ready_to_publish(cleaned)
+        self._warn_if_cover_image_will_be_lost()
         return cleaned
 
     # --- Slug ----------------------------------------------------------
@@ -189,3 +190,37 @@ class PostAdminForm(TranslatableModelForm):
                     code="missing_cover_image_alt",
                 ),
             )
+
+    # --- Utrata wybranego obrazu przy błędzie formularza -----------------
+
+    def _warn_if_cover_image_will_be_lost(self) -> None:
+        """Ostrzeż, gdy błąd gdziekolwiek indziej na formularzu skasuje wybrany obraz.
+
+        Przeglądarka nie potrafi ponownie wypełnić `<input type="file">` po
+        przeładowaniu strony z błędem walidacji — to ograniczenie HTML, nie
+        coś, co da się naprawić w Django. Obraz wybrany w tym samym żądaniu,
+        w którym walidacja czegokolwiek innego się nie powiodła, zniknie z
+        formularza po jego ponownym pokazaniu. Bez tego ostrzeżenia redaktor
+        poprawia zgłoszony błąd, zapisuje ponownie i dostaje post bez
+        okładki, nie wiedząc, że musi wybrać plik jeszcze raz — dokładnie
+        tak zniknęła okładka na poście „agata".
+
+        Pomijamy przypadek, gdy błąd dotyczy samego `cover_image` (np. zły
+        format) — ten błąd już mówi, co poprawić przed ponownym wyborem
+        pliku, więc drugi, generyczny komunikat na tym samym polu tylko by
+        mylił.
+        """
+        if "cover_image" not in self.files:
+            return
+        if "cover_image" in self._errors or not self._errors:
+            return
+
+        self.add_error(
+            "cover_image",
+            forms.ValidationError(
+                "Ten obraz nie zapisze się razem z poprawką błędów poniżej — "
+                "przeglądarka nie zapamiętuje wybranego pliku. Popraw błędy, "
+                "wybierz go jeszcze raz i dopiero wtedy zapisz.",
+                code="cover_image_lost_on_resubmit",
+            ),
+        )

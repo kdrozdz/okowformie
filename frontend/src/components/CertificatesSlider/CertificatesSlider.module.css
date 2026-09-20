@@ -88,6 +88,7 @@
 
 .certThumbImage {
   object-fit: cover;
+  object-position: top;
 }
 
 .certThumbIcon {
@@ -172,19 +173,23 @@
 .lightboxImage {
   position: relative;
   width: min(100%, 74vh);
-  aspect-ratio: 1;
+  height: min(64vh, 600px);
   border-radius: 28px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--surface);
-  background: linear-gradient(135deg, var(--teal), var(--indigo));
+  background: var(--navy);
   box-shadow: 0 30px 70px rgba(31, 43, 87, 0.4);
 }
 
+.lightboxImagePlaceholder {
+  background: linear-gradient(135deg, var(--teal), var(--indigo));
+}
+
 .lightboxImg {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .lightboxIcon {
