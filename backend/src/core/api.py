@@ -8,6 +8,7 @@ bez zależności od `blog` (`.claude/rules/scope.md`: apps podzielone domenowo).
 """
 
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 from django.http import Http404
@@ -35,12 +36,19 @@ def absolute_media_url(url: str) -> str:
     server-side z innego kontenera/adresu niż publiczna domena (np. frontend
     Next.js łączący się przez `http://backend:8000` wewnątrz sieci docker
     compose) — wtedy `og:image`/JSON-LD dostałyby wewnętrzny, nieosiągalny
-    z zewnątrz adres zamiast publicznego. `url` z `ImageField.url` jest zawsze
-    ścieżką względną zaczynającą się od `/` (`MEDIA_URL`), więc prosta
-    konkatenacja jest wystarczająca i jednoznaczna.
+    z zewnątrz adres zamiast publicznego.
+
+    `url` z `ImageField.url` jest ścieżką względną przy obecnym
+    `FileSystemStorage` — ale storage mediów to otwarta decyzja
+    (`CLAUDE.md`), a `STORAGES` Django pozwala go podmienić bez zmiany kodu
+    (`.claude/rules/scope.md`). Backend typu S3 (`django-storages` itp.)
+    zwraca z `.url` już absolutny URL do własnej domeny (bucket/CDN) — w tym
+    wypadku `SITE_URL` byłby błędny i nie powinien być doklejany.
     """
 
-    return f"{settings.SITE_URL.rstrip('/')}{url}"
+    if urlparse(url).scheme:
+        return url
+    return urljoin(settings.SITE_URL, url)
 
 
 class LanguageURLKwargMixin:
