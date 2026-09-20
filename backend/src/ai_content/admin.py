@@ -93,6 +93,18 @@ class PostGeneratorAdmin(admin.ModelAdmin):
         return self._can_generate(request)
 
     def has_view_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        """Dostęp do `changelist_view` (formularz generowania), nie do
+        pojedynczego rekordu.
+
+        Django rejestruje pełny zestaw URL-i CRUD dla każdego modela w adminie,
+        niezależnie od `has_add/change/delete_permission` — bez `obj is None`
+        tutaj, dowolne konto z `blog.add_post`+`blog.change_post` (ale bez
+        żadnego uprawnienia `ai_content.*`) mogłoby odczytać konfigurację AI
+        (w tym `extra_instructions`) przez `/ai_content/postgenerator/<pk>/change/`,
+        z pominięciem `AIProviderSettingsAdmin`, który tego pilnuje poprawnie.
+        """
+        if obj is not None:
+            return False
         return self._can_generate(request)
 
     @staticmethod

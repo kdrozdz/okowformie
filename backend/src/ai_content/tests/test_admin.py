@@ -168,6 +168,31 @@ def test_get_z_samym_add_post_bez_change_post_zwraca_403(
     assert response.status_code == 403
 
 
+def test_change_view_na_pojedynczym_rekordzie_zwraca_403(
+    client: Any,
+    settings: Any,
+    staff_with_add_post_permission: Any,
+    ai_provider_settings: AIProviderSettings,
+) -> None:
+    """Konto z `blog.add_post`+`blog.change_post` (bez żadnego uprawnienia
+    `ai_content.*`) dostaje `200` na `changelist_view` (formularz generowania),
+    ale nie może odczytać pojedynczego rekordu `PostGenerator` przez
+    `change_view` — bez tego Django wystawiłoby tam odczyt konfiguracji AI
+    (`provider`, `model_name`, `extra_instructions`) z pominięciem
+    `AIProviderSettingsAdmin`, który tę samą treść poprawnie chroni osobnymi
+    uprawnieniami (`ai_content.admin.PostGeneratorAdmin.has_view_permission`).
+    """
+    client.force_login(staff_with_add_post_permission)
+
+    changelist_response = client.get(_post_generator_url(settings))
+    change_response = client.get(
+        f"{_post_generator_url(settings)}{ai_provider_settings.pk}/change/"
+    )
+
+    assert changelist_response.status_code == 200
+    assert change_response.status_code == 403
+
+
 def test_post_z_sukcesem_tworzy_post_i_przekierowuje_z_komunikatem(
     client: Any,
     settings: Any,
