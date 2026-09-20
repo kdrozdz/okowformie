@@ -1,7 +1,7 @@
 # 11 — Branding headera (logo + linki social media)
 
 - **Cel:** Model `SiteBranding` (singleton: logo) + `SocialLink` (lista, FK do `SiteBranding`) w nowej aplikacji `branding`, panel redakcyjny w Django Admin, publiczne API `GET /api/v1/branding/`. Frontend (`Header.tsx`, `Footer.tsx`, favicon) pobiera logo i linki stamtąd zamiast statycznego `/logo.png`/`/icon.png` i zahardkodowanych `href="#"` — wygląd (rozmiar logo, rozmiar ikon) ma zostać identyczny z obecnym.
-- **Status:** gotowe do mergu do `dev` — obie rundy `qa-agent`/`/code-review`/`/check` zamknięte, wszystkie znaleziska naprawione lub udokumentowane jako świadomie odłożone/fałszywe. Czeka na potwierdzenie użytkownika przed mergem.
+- **Status:** zmergowane do `dev`. Pozostaje tylko nota operacyjna (wgranie realnego logo + social linków w panelu, patrz plan niżej) — poza zakresem kodowym tego taska.
 
 ## Decyzje wejściowe
 
@@ -32,7 +32,7 @@
 - [x] Naprawa: zdjęcia z telefonu (EXIF `Orientation`) wyglądały obrócone w faviconie (`app/icon.tsx` przepuszcza surowe bajty — renderowanie favikony w karcie przeglądarki często ignoruje EXIF, w odróżnieniu od `<img>` na stronie). `core.image_processing.normalize_image_orientation` (Pillow `ImageOps.exif_transpose`) wpięte w `SiteBranding.save()` — obraca piksele i usuwa flagę przy KAŻDYM świeżo wgranym logo (`isinstance(self.logo.file, UploadedFile)` odróżnia nowy upload od zwykłego re-save już zapisanego pliku, żeby nie przekodowywać/nie zmieniać nazwy pliku bez powodu). `about.photo`/`Certificate.image`/`blog.cover_image` mają ten sam potencjalny defekt, świadomie nieruszone w tym tasku (ten sam wzorzec co z `upload_to` — kandydat do osobnego zlecenia). Kwadratowy/prostokątny kształt favikony pozostaje bez zmian — to oczekiwane zachowanie (brak możliwości CSS-owego zaokrąglenia favikony), potwierdzone z użytkownikiem. 211/211 testów.
 - [x] Kolejna runda `qa-agent` + `/code-review` po tych rozszerzeniach (stopka, favicon, refaktor serializera, normalizacja EXIF) — **NO-GO → naprawione**, patrz "Druga runda review" niżej.
 - [x] `/check` zielone po tej rundzie (zakres celowany na zmienione pliki — backend w całości, frontend bez ponownego przebiegu, bo nic w nim nie zmieniła ta runda naprawy).
-- [ ] Merge do `dev`.
+- [x] Merge do `dev` (4 atomowe commity na branchu: reguły procesowe, backend, frontend, docs — `git merge --no-ff`, bez konfliktów).
 
 ### Druga runda review (qa-agent + /code-review) — znaleziska i naprawy
 
