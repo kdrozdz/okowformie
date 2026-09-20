@@ -18,6 +18,13 @@ interface CertificatesSliderProps {
 // liczeniu kroku przewijania strzałkami (mockup: `offsetWidth + 14`).
 const SCROLL_GAP_PX = 14;
 
+// Lokalny odpowiednik `clsx`/`cx` — w projekcie nie ma tej zależności, a
+// sklejanie klas przez template literal powtarzało się w tym pliku
+// wystarczająco często, żeby uzasadnić abstrakcję (`engineering-principles.md`).
+function cx(...classes: Array<string | false | undefined | null>): string {
+  return classes.filter(Boolean).join(" ");
+}
+
 /**
  * Jedyny `"use client"` w tym tasku: stan lokalny (aktywny slajd, lightbox)
  * i interakcje z DOM (`scrollBy`, klawiatura) nie dają się wyrazić w Server
@@ -116,7 +123,7 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
     <div className={styles.sliderWrap}>
       <button
         type="button"
-        className={`${styles.arrow} ${styles.arrowPrev}`}
+        className={cx(styles.arrow, styles.arrowPrev)}
         aria-label={dict.prevAriaLabel}
         onClick={() => scrollByDirection(-1)}
         disabled={!canScrollPrev}
@@ -158,7 +165,7 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
 
       <button
         type="button"
-        className={`${styles.arrow} ${styles.arrowNext}`}
+        className={cx(styles.arrow, styles.arrowNext)}
         aria-label={dict.nextAriaLabel}
         onClick={() => scrollByDirection(1)}
         disabled={!canScrollNext}
@@ -195,13 +202,18 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
             <div className={styles.lightboxStage}>
               <button
                 type="button"
-                className={`${styles.lightboxNav} ${styles.lightboxNavPrev}`}
+                className={cx(styles.lightboxNav, styles.lightboxNavPrev)}
                 aria-label={dict.lightboxPrevAriaLabel}
                 onClick={showPrev}
               >
                 &larr;
               </button>
-              <div className={styles.lightboxImage}>
+              <div
+                className={cx(
+                  styles.lightboxImage,
+                  !activeCertificate.image && styles.lightboxImagePlaceholder,
+                )}
+              >
                 {activeCertificate.image ? (
                   <Image
                     src={activeCertificate.image}
@@ -216,7 +228,7 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
               </div>
               <button
                 type="button"
-                className={`${styles.lightboxNav} ${styles.lightboxNavNext}`}
+                className={cx(styles.lightboxNav, styles.lightboxNavNext)}
                 aria-label={dict.lightboxNextAriaLabel}
                 onClick={showNext}
               >

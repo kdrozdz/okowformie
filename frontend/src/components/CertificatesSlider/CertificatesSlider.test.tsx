@@ -6,6 +6,7 @@ import type { Certificate } from "@/lib/api/types";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 import { CertificatesSlider } from "./CertificatesSlider";
+import styles from "./CertificatesSlider.module.css";
 
 // `next/image`'s real loader validates `src` against `images.remotePatterns`
 // from `next.config.ts`, which only exists inside a running Next server —
@@ -78,6 +79,37 @@ describe("CertificatesSlider", () => {
     expect(
       within(dialog).getByText(`${certificates[1]!.name} — ${certificates[1]!.issuer} (2019)`),
     ).toBeInTheDocument();
+  });
+
+  it("certyfikat bez zdjęcia dostaje branded placeholder (gradient), nie tylko puste ciemne tło", async () => {
+    // Regresja: `.lightboxImage` ma teraz stałe `background: var(--navy)`
+    // (litterbox pod `object-fit: contain` zdjęć), więc stan bez zdjęcia
+    // musi jawnie dostać drugą klasę z gradientem — inaczej certyfikat bez
+    // skanu wygląda jak błąd ładowania, nie jak świadomy branded placeholder.
+    const user = userEvent.setup();
+    render(<CertificatesSlider certificates={certificates} dict={dict} />);
+
+    await user.click(screen.getByRole("button", { name: certificates[0]!.name }));
+    const dialog = screen.getByRole("dialog", { name: dict.lightboxDialogAriaLabel });
+
+    const iconWrap = dialog.querySelector("svg")?.parentElement;
+    expect(iconWrap).not.toBeNull();
+    expect(iconWrap).toHaveClass(styles.lightboxImage);
+    expect(iconWrap).toHaveClass(styles.lightboxImagePlaceholder);
+  });
+
+  it("certyfikat ze zdjęciem NIE dostaje klasy placeholdera (brak gradientu nad zdjęciem)", async () => {
+    const user = userEvent.setup();
+    render(<CertificatesSlider certificates={certificates} dict={dict} />);
+
+    await user.click(screen.getByRole("button", { name: certificates[1]!.name }));
+    const dialog = screen.getByRole("dialog", { name: dict.lightboxDialogAriaLabel });
+
+    const imageWrap = within(dialog)
+      .getByAltText(`${certificates[1]!.name} — ${certificates[1]!.issuer}`)
+      .closest(`.${styles.lightboxImage}`);
+    expect(imageWrap).not.toBeNull();
+    expect(imageWrap).not.toHaveClass(styles.lightboxImagePlaceholder);
   });
 
   it("strzałka „następny” w lightboksie przechodzi do kolejnego certyfikatu", async () => {
