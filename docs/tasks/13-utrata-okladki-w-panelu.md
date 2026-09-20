@@ -4,7 +4,7 @@
   zniknie z formularza po błędzie walidacji, zamiast po cichu zapisywać post
   bez okładki. Dodatkowo (zgłoszenie 2, ten sam branch): okładka posta i
   powiększenie certyfikatu mają pokazywać cały wgrany obraz, bez przycinania.
-- **Status:** w toku (zgłoszenie 2 w review)
+- **Status:** gotowe, zmergowane do `dev`
 
 ## Kontekst
 
@@ -125,7 +125,10 @@ nie CSS), do rozważenia jako osobny task.
       tylko potwierdzenie, że właściwy CSS faktycznie dotarł do przeglądarki;
       pełny wizualny smoke-test (obraz pionowy/poziomy) zostaje do
       ręcznej weryfikacji przez użytkownika przed/po mergu.
-- [ ] Merge do `dev`
+- [x] `/check` — backend (ruff, mypy, `manage.py check`, pytest 219/219,
+      `makemigrations --dry-run --check`) i frontend (lint, typecheck,
+      vitest 68/68) w kontenerach Dockera — wszystko zielone
+- [x] Merge do `dev`
 
 ### Follow-upy (świadomie nieujęte w tym tasku — inne pliki/domena)
 Przeniesione do `docs/todo/TODO.md` (z `/code-review` + diagnoza favicony),
