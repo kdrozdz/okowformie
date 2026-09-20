@@ -20,7 +20,16 @@ export function Header({ lang, authorName }: HeaderProps) {
     <header className={styles.siteHeader}>
       <div className={styles.brandBlock}>
         <div className={styles.brandLogoCol}>
-          <Link className={styles.brandLogoLink} href={`/${lang}`} aria-label={dict.homeAriaLabel}>
+          {/* Cel bezpośredni (nie `/${lang}`), żeby uniknąć widocznego
+              mignięcia treści: `/${lang}` to sam server-side redirect do
+              `/${lang}/o-mnie` (`app/[lang]/page.tsx`) — kliknięcie w niego
+              wymuszałoby dodatkowy przeskok zamiast płynnej nawigacji
+              klienckiej, jaką ma "O mnie" w `PrimaryNav`. */}
+          <Link
+            className={styles.brandLogoLink}
+            href={`/${lang}/o-mnie`}
+            aria-label={dict.homeAriaLabel}
+          >
             <Image
               className={styles.brandMark}
               src="/logo.png"
