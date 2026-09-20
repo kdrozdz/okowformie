@@ -60,11 +60,11 @@ Wzorzec do naśladowania w każdym kroku: `about` (app analogiczna do `blog`, si
 
 ### 5a. Rozszerzenie: edytowalne instrukcje dla AI (dodane po sekcji 5, 2026-09-20)
 Poza pierwotnymi „Decyzjami wejściowymi” — padło w rozmowie po sekcji 5: zamiast hardkodować w kodzie personę/ton („pisz jak doświadczony optometrysta”) czy wytyczne SEO, redaktor ma dostać do tego edytowalne pole w panelu (ten sam wzorzec co `local_focus` w `PostGenerationForm` — edytowalne, z sensownym domyślnym tekstem, nigdy hardkodowane w kodzie). RAG (retrieval z istniejących postów) świadomie **nie** wchodzi w zakres — zanotowane w `docs/todo/TODO.md`, YAGNI.
-- [ ] backend-agent: `ai_content/models.py` — nowe pole na `AIProviderSettings`: `extra_instructions = models.TextField(verbose_name="Dodatkowe instrukcje dla AI", blank=True, default="Pisz jak doświadczony optometrysta — rzeczowo, z autorytetem. Stosuj sprawdzone zasady SEO: jasna struktura nagłówków, odpowiedź na intencję wyszukiwania, zasady E-E-A-T.", help_text="Doklejane do promptu przy każdym generowaniu — persona, ton, wytyczne SEO. Możesz zostawić puste albo zmienić na własne.")`. Migracja: `uv run manage.py makemigrations ai_content` (pole dodatkowe z `default=`, brak istniejących danych produkcyjnych do migrowania — branch jeszcze niezmergowany).
-- [ ] backend-agent: `ai_content/admin.py` — dopisać `"extra_instructions"` do `AIProviderSettingsAdmin.fields`, z widgetem `forms.Textarea` (podobnie jak `excerpt` w `blog.forms.PostAdminForm.Meta.widgets`).
-- [ ] backend-agent: `ai_content/services.py` — `_build_system_prompt(topic, local_focus, extra_instructions)`: jeśli `extra_instructions` niepuste, dopisz sekcję na końcu promptu, np. `"\n\nDodatkowe wytyczne od redakcji:\n{extra_instructions}"`. `generate_post_content` przekazuje `ai_settings.extra_instructions`.
-- [ ] backend-agent: zaktualizować `ai_content/tests/` (fixture `ai_provider_settings` w `conftest.py`, testy `_build_system_prompt` w `test_services.py`) pod nową sygnaturę/pole — to jedyny wyjątek od zasady „backend-agent nie dotyka katalogów testów”, bo zmiana sygnatury bezpośrednio wymaga zaktualizowania istniejących wywołań w testach, nie dopisania nowych przypadków (te dopisze `qa-agent` przy najbliższym review, jeśli uzna za potrzebne).
-- [ ] `/check` po zmianie — zielone.
+- [x] backend-agent: `ai_content/models.py` — nowe pole na `AIProviderSettings`: `extra_instructions = models.TextField(verbose_name="Dodatkowe instrukcje dla AI", blank=True, default="Pisz jak doświadczony optometrysta — rzeczowo, z autorytetem. Stosuj sprawdzone zasady SEO: jasna struktura nagłówków, odpowiedź na intencję wyszukiwania, zasady E-E-A-T.", help_text="Doklejane do promptu przy każdym generowaniu — persona, ton, wytyczne SEO. Możesz zostawić puste albo zmienić na własne.")`. Migracja: `uv run manage.py makemigrations ai_content` (pole dodatkowe z `default=`, brak istniejących danych produkcyjnych do migrowania — branch jeszcze niezmergowany).
+- [x] backend-agent: `ai_content/admin.py` — dopisać `"extra_instructions"` do `AIProviderSettingsAdmin.fields`, z widgetem `forms.Textarea` (podobnie jak `excerpt` w `blog.forms.PostAdminForm.Meta.widgets`).
+- [x] backend-agent: `ai_content/services.py` — `_build_system_prompt(topic, local_focus, extra_instructions)`: jeśli `extra_instructions` niepuste, dopisz sekcję na końcu promptu, np. `"\n\nDodatkowe wytyczne od redakcji:\n{extra_instructions}"`. `generate_post_content` przekazuje `ai_settings.extra_instructions`.
+- [x] backend-agent: zaktualizować `ai_content/tests/` (fixture `ai_provider_settings` w `conftest.py`, testy `_build_system_prompt` w `test_services.py`) pod nową sygnaturę/pole — to jedyny wyjątek od zasady „backend-agent nie dotyka katalogów testów”, bo zmiana sygnatury bezpośrednio wymaga zaktualizowania istniejących wywołań w testach, nie dopisania nowych przypadków (te dopisze `qa-agent` przy najbliższym review, jeśli uzna za potrzebne). W praktyce backend-agent dopisał też 2 małe testy nowej gałęzi (`test_prompt_zawiera_dodatkowe_instrukcje_gdy_niepuste`, `test_prompt_bez_sekcji_dodatkowych_instrukcji_gdy_puste`) — uznane za tanie i bezpośrednio powiązane, nie za rozszerzenie zakresu.
+- [x] `/check` po zmianie — zielone (`ruff`/`mypy`/`manage.py check`/`makemigrations --dry-run` czyste, `pytest -q` — **243 passed**, zweryfikowane niezależnie).
 
 ### 6. Dokumentacja i domknięcie
 - [ ] backend-agent: `docs/decisions/2026-09-20-generator-postow-ai.md` — nowy plik formalizujący architekturę (nowa aplikacja `ai_content`, singleton `AIProviderSettings`, `init_chat_model` + `with_structured_output`, klucze wyłącznie w zmiennych środowiskowych, proxy-model do UI w adminie, generacja tylko PL), wzorem `docs/decisions/2026-09-19-model-about-me.md` dla taska 9 — to, co dziś żyje tylko w sekcji „Decyzje wejściowe” wyżej.
@@ -171,3 +171,17 @@ taska, nie osobny temat): `PostGeneratorAdmin._can_generate` wymaga teraz
 i test `test_get_z_samym_add_post_bez_change_post_zwraca_403` zaktualizowane
 odpowiednio. Commit `03a692f`. Po poprawce: 241 passed (240 + 1 nowy test),
 `ruff`/`mypy` nadal czyste.
+
+### Sekcja 5a zrealizowana (2026-09-20)
+`backend-agent` dostarczył pole `AIProviderSettings.extra_instructions`
+(`TextField`, `blank=True`, z domyślnym tekstem „Pisz jak doświadczony
+optometrysta…” + wytyczne SEO/E-E-A-T), migrację `0002_aiprovidersettings_
+extra_instructions.py` (jeden `AddField`, addytywna), widget `Textarea` w
+`AIProviderSettingsAdmin`, i doklejanie tekstu do promptu w
+`_build_system_prompt` tylko gdy pole niepuste. Commit `a43e417`. Dwie
+notatki poszły do `docs/todo/TODO.md` przy okazji tej rozmowy: RAG (osobny,
+duży temat, świadomie poza zakresem) i wersjonowanie system promptów
+(częściowo pokryte za darmo przez historię zmian w Django Admin —
+`django.contrib.admin.models.LogEntry`; pełne powiązanie posta z dokładną
+wersją promptu odłożone do rewizji, gdy funkcja zacznie być realnie
+używana). Zweryfikowane niezależnie: `pytest -q` — **243 passed**.
