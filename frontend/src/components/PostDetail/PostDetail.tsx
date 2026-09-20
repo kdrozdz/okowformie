@@ -5,6 +5,7 @@ import type { PostDetail as PostDetailData } from "@/lib/api/types";
 import { formatDate } from "@/lib/format/date";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import type { Language } from "@/lib/i18n/languages";
+import { toOptimizableImageSrc } from "@/lib/media/image-src";
 
 import styles from "./PostDetail.module.css";
 
@@ -30,7 +31,7 @@ export function PostDetail({ post, lang }: PostDetailProps) {
       {post.cover_image ? (
         <div className={styles.coverWrap}>
           <Image
-            src={post.cover_image}
+            src={toOptimizableImageSrc(post.cover_image)}
             alt={post.cover_image_alt}
             fill
             sizes="(max-width: 720px) 100vw, 720px"

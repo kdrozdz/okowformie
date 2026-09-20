@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/format/date";
 import type { PostSummary } from "@/lib/api/types";
 import type { Language } from "@/lib/i18n/languages";
+import { toOptimizableImageSrc } from "@/lib/media/image-src";
 
 import styles from "./PostList.module.css";
 
@@ -19,7 +20,7 @@ export function PostCard({ post, lang }: PostCardProps) {
       <span className={styles.thumbWrap}>
         {post.cover_image ? (
           <Image
-            src={post.cover_image}
+            src={toOptimizableImageSrc(post.cover_image)}
             alt={post.cover_image_alt}
             fill
             sizes="112px"

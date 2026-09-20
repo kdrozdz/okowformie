@@ -4,6 +4,7 @@ import { CertificatesSlider } from "@/components/CertificatesSlider/Certificates
 import type { About } from "@/lib/api/types";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import type { Language } from "@/lib/i18n/languages";
+import { toOptimizableImageSrc } from "@/lib/media/image-src";
 
 import styles from "./AboutSection.module.css";
 
@@ -32,7 +33,7 @@ export function AboutSection({ about, lang }: AboutSectionProps) {
             {about.photo ? (
               <Image
                 className={styles.avatarPhoto}
-                src={about.photo}
+                src={toOptimizableImageSrc(about.photo)}
                 alt={about.photo_alt}
                 width={108}
                 height={108}
@@ -69,7 +70,17 @@ export function AboutSection({ about, lang }: AboutSectionProps) {
               </div>
             </div>
           </div>
-          <CertificatesSlider certificates={about.certificates} dict={dict} />
+          <CertificatesSlider
+            certificates={about.certificates.map((certificate) => ({
+              ...certificate,
+              // `CertificatesSlider` to komponent kliencki (`"use client"`) —
+              // transformacja musi się odbyć tutaj (Server Component, ma
+              // dostęp do `API_URL`), zanim URL trafi jako zwykły string do
+              // propsów po drugiej stronie granicy client/server.
+              image: certificate.image ? toOptimizableImageSrc(certificate.image) : certificate.image,
+            }))}
+            dict={dict}
+          />
         </div>
       ) : null}
     </>
