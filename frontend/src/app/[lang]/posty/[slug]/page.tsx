@@ -2,11 +2,43 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PostDetail } from "@/components/PostDetail/PostDetail";
-import { getPost } from "@/lib/api/client";
-import { isSupportedLanguage } from "@/lib/i18n/languages";
+import { getPost, getPosts } from "@/lib/api/client";
+import { isSupportedLanguage, SUPPORTED_LANGUAGES } from "@/lib/i18n/languages";
 
 interface PostPageProps {
   params: Promise<{ lang: string; slug: string }>;
+}
+
+/**
+ * Statyczna lista sluggów per język w momencie builda — warunek dla
+ * faktycznego SSG tej trasy (`.claude/rules/performance.md`), nie tylko
+ * dla `/[lang]/o-mnie`. Posty opublikowane PO buildzie nadal działają:
+ * `dynamicParams` domyślnie `true`, więc nieznany slug renderuje się
+ * on-demand przy pierwszym żądaniu i jest cache'owany przez rewalidację
+ * z `getPost` (15s) — ten sam mechanizm ISR, nie osobna ścieżka kodu.
+ * Liczba postów w fazie 1 (pojedyncze cyfry) czyni pełną paginację przez
+ * wszystkie strony tanią; przy realnym wzroście wolumenu do
+ * przemyślenia osobno.
+ */
+export async function generateStaticParams() {
+  const params: { lang: string; slug: string }[] = [];
+
+  for (const lang of SUPPORTED_LANGUAGES) {
+    let page = 1;
+    for (;;) {
+      const result = await getPosts(lang, page);
+      if (!result) break;
+
+      for (const post of result.results) {
+        params.push({ lang, slug: post.slug });
+      }
+
+      if (!result.next) break;
+      page += 1;
+    }
+  }
+
+  return params;
 }
 
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {

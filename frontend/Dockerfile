@@ -68,6 +68,16 @@ COPY . .
 # with --build-arg for other environments.
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Server-only (no `NEXT_PUBLIC_`, never reaches the client bundle) — but
+# `next build` actually executes `generateStaticParams`/Server Component
+# fetches at build time (true SSG for `/[lang]/o-mnie`, `/[lang]/posty`,
+# `/[lang]/posty/[slug]`), so the API must be reachable from *this* build
+# stage, not just at runtime. Default mirrors NEXT_PUBLIC_API_URL for a
+# bare `docker build` without compose network; pass
+# `--build-arg API_URL=http://backend:8000 --network <compose-network>`
+# to build against the real API (e.g. local compose's `backend` service).
+ARG API_URL=http://localhost:8000
+ENV API_URL=${API_URL}
 RUN npm run build
 
 # ---- runner (production, default) -----------------------------------------
@@ -75,6 +85,11 @@ FROM base AS runner
 ENV NODE_ENV=production
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Runtime fallback for on-demand ISR of params not covered by build-time
+# `generateStaticParams` (e.g. a slug published after the last build) —
+# should normally be overridden per environment same as at build time.
+ARG API_URL=http://localhost:8000
+ENV API_URL=${API_URL}
 
 # `node` user/group already exist in the official node images.
 COPY --from=builder /app/public ./public
