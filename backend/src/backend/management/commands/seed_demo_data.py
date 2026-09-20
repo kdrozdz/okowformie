@@ -84,7 +84,10 @@ ABOUT_TRANSLATIONS: Final[dict[str, AboutTranslationSeed]] = {
             "klinicznej.</p>"
         ),
         "photo_alt": "Anna Kowalska, optometrystka, uśmiechnięta w gabinecie optycznym",
-        "meta_title": "Anna Kowalska — optometrystka | okowFormie",
+        # Marka, nie imię i nazwisko — tak ma wyglądać karta przeglądarki
+        # (zgłoszenie użytkownika przy live-testowaniu, dopasowane też
+        # ręcznie w bazie na potrzeby dema).
+        "meta_title": "Oko w Formie",
         "meta_description": (
             "Anna Kowalska, optometrystka z ponad dziesięcioletnim doświadczeniem — "
             "dzieli się wiedzą o soczewkach kontaktowych, okularach i zdrowiu wzroku "
@@ -111,7 +114,7 @@ ABOUT_TRANSLATIONS: Final[dict[str, AboutTranslationSeed]] = {
             "research.</p>"
         ),
         "photo_alt": "Anna Kowalska, optometrist, smiling in her optical practice",
-        "meta_title": "Anna Kowalska — Optometrist | okowFormie",
+        "meta_title": "Oko w Formie",
         "meta_description": (
             "Anna Kowalska is an optometrist with over ten years of experience, "
             "sharing practical knowledge about contact lenses, glasses, and eye "
