@@ -70,8 +70,8 @@ Poza pierwotnymi „Decyzjami wejściowymi” — padło w rozmowie po sekcji 5:
 - [x] backend-agent: `docs/decisions/2026-09-20-generator-postow-ai.md` — nowy plik formalizujący architekturę (nowa aplikacja `ai_content`, singleton `AIProviderSettings`, `init_chat_model` + `with_structured_output`, klucze wyłącznie w zmiennych środowiskowych, proxy-model do UI w adminie, generacja tylko PL), wzorem `docs/decisions/2026-09-19-model-about-me.md` dla taska 9 — to, co dziś żyje tylko w sekcji „Decyzje wejściowe” wyżej. Commit `073f318`, zawiera też `extra_instructions` (sekcja 5a) i wymóg `blog.add_post`+`blog.change_post` (poprawka z sekcji 5).
 - [x] backend-agent: `CLAUDE.md` — przenieść „Sekrety bez AWS” z „Otwarte decyzje” do „Rozstrzygnięte”, z odnośnikiem do nowego pliku decyzji (rozstrzygnięte: zmienne środowiskowe czytane bezpośrednio przez biblioteki, bez Vault/AWS Secrets Manager). Ten sam commit `073f318`.
 - [x] `/check` (ruff, mypy, `pytest`, `manage.py check`, `makemigrations --dry-run`) — zielone (backend: `ruff`/`mypy`/`manage.py check`/`makemigrations --dry-run` czyste, `pytest -q` — 243 passed; frontend bez zmian w tym tasku, sprawdzony dla pewności: `lint`/`typecheck` czyste, `npm test` pominięte — brak skryptu).
-- [ ] qa-agent: niezależne review całości (regresje w `blog`, bezpieczeństwo kluczy/sanityzacji, brak wycieku draftów, zgodność z `.claude/rules/`).
-- [ ] backend-agent: naprawa znalezisk z review qa-agent.
+- [x] qa-agent: niezależne review całości (regresje w `blog`, bezpieczeństwo kluczy/sanityzacji, brak wycieku draftów, zgodność z `.claude/rules/`). Werdykt: **GO z zastrzeżeniem** (patrz „Decyzje po drodze” niżej). Dopisano 14 testów (luki w pokryciu: `PostGenerationForm`, walidatory `temperature`/`max_output_tokens`, sanityzacja XSS na realnym zapisie), commit `904e1c6` — 24→38 testów `ai_content`, 243→257 w całym backendzie.
+- [x] backend-agent: naprawa znalezisk z review qa-agent. Defekt #1 (Medium — `PostGeneratorAdmin.has_view_permission` udostępniał odczyt konfiguracji AI przez `change_view` z pominięciem dedykowanych uprawnień `ai_content.*`) naprawiony, commit `6baba19`, z testem regresyjnym — 258 testów w całym backendzie. Defekt #2 (Informational/Low — rezydualne ryzyko wycieku klucza API w logu SDK dostawcy) świadomie nienaprawiany teraz, zanotowany w `docs/todo/TODO.md`.
 - [ ] `/code-review` (poziom medium) i naprawa znalezisk.
 - [ ] Aktualizacja tego pliku — odhaczona checklista, `Status: gotowe`, wynik `/check`/review/`/code-review` udokumentowany w sekcji „Decyzje po drodze” (wzorem `docs/tasks/9-strona-o-mnie.md`).
 - [ ] Merge do `dev` dopiero po zamknięciu review — osobna, świadoma decyzja użytkownika (`Workflow Git` w `CLAUDE.md`), nie automatyczny krok tego planu.
@@ -185,3 +185,36 @@ duży temat, świadomie poza zakresem) i wersjonowanie system promptów
 `django.contrib.admin.models.LogEntry`; pełne powiązanie posta z dokładną
 wersją promptu odłożone do rewizji, gdy funkcja zacznie być realnie
 używana). Zweryfikowane niezależnie: `pytest -q` — **243 passed**.
+
+### Niezależne review qa-agent + naprawa (2026-09-20)
+
+**Werdykt: GO z zastrzeżeniem.** Fundamenty potwierdzone empirycznie, nie
+tylko przez czytanie kodu: klucze API nigdy nie trafiają do usera (`str(exc)`
+źródłowy nigdy nie ląduje w `PostGenerationError` pokazywanym w adminie,
+tylko w logu serwera); brak wycieku draftów (`PostQuerySet.published*`
+filtruje po statusie niezależnie od tego, jak wiersz powstał); sanityzacja
+HTML działa niezależnie od ścieżki zapisu (`PostTranslation.save()`,
+potwierdzone nowym testem z wstrzykniętym `<script>`/`onerror`); `git diff`
+`dev`..`12-generator-postow-ai` pokazuje **zero zmian w `blog/`** —
+`ai_content` tylko importuje stamtąd; transakcyjność i migracje poprawne.
+
+**Defekt #1 (Medium) — `PostGeneratorAdmin.has_view_permission` ignorował
+`obj`.** `ai_content/admin.py` — ta sama metoda gatekeeperuje zarówno
+`changelist_view` (formularz generowania, `obj=None`), jak i standardowy
+`change_view` pod `/ai_content/postgenerator/<pk>/change/` (Django
+rejestruje pełny CRUD niezależnie od `has_add/change/delete_permission`).
+Efekt: dowolne konto z `blog.add_post`+`blog.change_post` (bez żadnego
+uprawnienia `ai_content.*`) dostawało `200` (read-only) na tym URL-u,
+widząc `provider`/`model_name`/`temperature`/`max_output_tokens`/
+`extra_instructions` — konfigurację chronioną osobno w `AIProviderSettingsAdmin`.
+PK zawsze `1` (singleton), więc URL trywialny do odgadnięcia. Naprawione:
+`has_view_permission` zwraca teraz `False`, gdy `obj is not None`. Test
+regresyjny `test_change_view_na_pojedynczym_rekordzie_zwraca_403`. Commit
+`6baba19`.
+
+**Defekt #2 (Informational/Low)** — rezydualne, niezweryfikowane ryzyko, że
+SDK dostawcy AI mógłby wpisać fragment klucza w treść wyjątku, logowaną
+przez `logger.exception`. Świadomie nienaprawiany teraz — zanotowany w
+`docs/todo/TODO.md`.
+
+Po naprawie: `pytest -q` — **258 passed**, `ruff`/`mypy` czyste (117 plików).
