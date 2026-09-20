@@ -119,4 +119,54 @@ describe("CertificatesSlider", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("Tab z ostatniego fokusowalnego elementu dialogu wraca do pierwszego (pułapka fokusu)", async () => {
+    const user = userEvent.setup();
+    render(<CertificatesSlider certificates={certificates} dict={dict} />);
+
+    await user.click(screen.getByRole("button", { name: certificates[0]!.name }));
+    const dialog = screen.getByRole("dialog", { name: dict.lightboxDialogAriaLabel });
+    const closeButton = within(dialog).getByRole("button", { name: dict.lightboxCloseAriaLabel });
+    const nextButton = within(dialog).getByRole("button", { name: dict.lightboxNextAriaLabel });
+
+    // Przycisk zamknięcia dostaje fokus automatycznie przy otwarciu.
+    expect(closeButton).toHaveFocus();
+
+    nextButton.focus();
+    await user.tab();
+
+    expect(closeButton).toHaveFocus();
+  });
+
+  it("Shift+Tab z pierwszego fokusowalnego elementu dialogu przechodzi do ostatniego (pułapka fokusu)", async () => {
+    const user = userEvent.setup();
+    render(<CertificatesSlider certificates={certificates} dict={dict} />);
+
+    await user.click(screen.getByRole("button", { name: certificates[0]!.name }));
+    const dialog = screen.getByRole("dialog", { name: dict.lightboxDialogAriaLabel });
+    const closeButton = within(dialog).getByRole("button", { name: dict.lightboxCloseAriaLabel });
+    const nextButton = within(dialog).getByRole("button", { name: dict.lightboxNextAriaLabel });
+
+    expect(closeButton).toHaveFocus();
+
+    await user.tab({ shift: true });
+
+    expect(nextButton).toHaveFocus();
+  });
+
+  it("Tab nie wyprowadza fokusu poza dialog do elementów w tle", async () => {
+    const user = userEvent.setup();
+    render(<CertificatesSlider certificates={certificates} dict={dict} />);
+
+    await user.click(screen.getByRole("button", { name: certificates[0]!.name }));
+    const dialog = screen.getByRole("dialog", { name: dict.lightboxDialogAriaLabel });
+
+    // Trzy fokusowalne elementy w dialogu: zamknij, poprzedni, następny.
+    await user.tab();
+    await user.tab();
+    await user.tab();
+
+    expect(document.activeElement).not.toBeNull();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
 });

@@ -27,6 +27,7 @@ const SCROLL_GAP_PX = 14;
 export function CertificatesSlider({ certificates, dict }: CertificatesSliderProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const { lightboxIndex, isOpen, open, close, showNext, showPrev } = useCertificatesLightbox(
     certificates.length,
   );
@@ -75,6 +76,34 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
       if (event.key === "Escape") close();
       if (event.key === "ArrowRight") showNext();
       if (event.key === "ArrowLeft") showPrev();
+      // Pułapka fokusu (wzorzec WAI-ARIA dla modali): Tab/Shift+Tab nie mogą
+      // wyprowadzić fokusu poza panel, mimo że overlay wizualnie zasłania
+      // resztę strony — bez tego klawiatura wciąż dociera do nawigacji w tle.
+      if (event.key === "Tab") handleTab(event);
+    }
+
+    function handleTab(event: KeyboardEvent) {
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const isInsidePanel = panel.contains(document.activeElement);
+
+      if (event.shiftKey) {
+        if (!isInsidePanel || document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (!isInsidePanel || document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
 
     document.addEventListener("keydown", handleKeyDown);
@@ -148,6 +177,7 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
             onClick={close}
           />
           <div
+            ref={panelRef}
             className={styles.lightboxPanel}
             role="dialog"
             aria-modal="true"
