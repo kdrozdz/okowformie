@@ -61,3 +61,14 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+
+export interface SocialLink {
+  platform: string;
+  url: string;
+}
+
+/** Nietłumaczone — `branding.serializers`, `GET /api/v1/branding/` bez `{lang}`. */
+export interface Branding {
+  logo: string | null;
+  social_links: SocialLink[];
+}

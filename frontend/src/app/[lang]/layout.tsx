@@ -6,7 +6,8 @@ import "../globals.css";
 
 import { Footer } from "@/components/Footer/Footer";
 import { Header } from "@/components/Header/Header";
-import { getAbout } from "@/lib/api/client";
+import { getAbout, getBranding } from "@/lib/api/client";
+import type { Branding } from "@/lib/api/types";
 import { isSupportedLanguage, SUPPORTED_LANGUAGES, type Language } from "@/lib/i18n/languages";
 
 const sora = Sora({
@@ -56,7 +57,7 @@ export default async function LangLayout({
   if (!isSupportedLanguage(lang)) {
     notFound();
   }
-  const about = await getAboutSafely(lang);
+  const [about, branding] = await Promise.all([getAboutSafely(lang), getBrandingSafely()]);
 
   return (
     <html lang={lang} className={`${sora.variable} ${karla.variable}`}>
@@ -67,9 +68,9 @@ export default async function LangLayout({
           na tym konkretnym węźle. Ogranicza się do atrybutów <body>, nie
           wycisza prawdziwych niezgodności hydratacji w dzieciach poniżej. */}
       <body suppressHydrationWarning>
-        <Header lang={lang as Language} authorName={about?.full_name ?? null} />
+        <Header lang={lang as Language} authorName={about?.full_name ?? null} branding={branding} />
         <main className="page-content">{children}</main>
-        <Footer lang={lang as Language} />
+        <Footer lang={lang as Language} branding={branding} />
       </body>
     </html>
   );
@@ -83,6 +84,18 @@ async function getAboutSafely(lang: Language) {
     // ma przejściowy problem — brak nazwiska w headerze to degradacja, nie
     // błąd krytyczny. Strona /o-mnie sama zgłosi błąd przez `error.tsx`.
     console.error("Nie udało się pobrać danych „O mnie” dla headera:", error);
+    return null;
+  }
+}
+
+async function getBrandingSafely(): Promise<Branding | null> {
+  try {
+    return await getBranding();
+  } catch (error) {
+    // Analogicznie do `getAboutSafely` — logo/social linki niedostępne to
+    // degradacja (fallback na statyczne `public/brand/logo.png`, brak ikon social
+    // w headerze), nie błąd krytyczny wywracający całą witrynę.
+    console.error("Nie udało się pobrać danych brandingu dla headera:", error);
     return null;
   }
 }

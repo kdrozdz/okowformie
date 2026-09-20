@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O mnie” niepublikowane/niedostępne — nie blokuje renderu headera) 1`] = `
+exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O mnie” niepublikowane/niedostępne — nie blokuje renderu headera) oraz z pełnym brandingiem 1`] = `
 <header
   class="_siteHeader_a5b977"
 >
@@ -18,7 +18,7 @@ exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O 
         <img
           alt=""
           class="_brandMark_a5b977"
-          src="/logo.png"
+          src="http://backend:8000/media/branding/logo/abc123.png"
         />
       </a>
       <div
@@ -27,7 +27,7 @@ exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O 
         <a
           aria-label="okowFormie on LinkedIn"
           class="_isLinkedin_a5b977"
-          href="#"
+          href="https://www.linkedin.com/company/okowformie"
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -44,7 +44,7 @@ exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O 
         <a
           aria-label="okowFormie on Instagram"
           class="_isInstagram_a5b977"
-          href="#"
+          href="https://www.instagram.com/okowformie"
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -79,7 +79,7 @@ exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O 
         <a
           aria-label="okowFormie on Facebook"
           class="_isFacebook_a5b977"
-          href="#"
+          href="https://www.facebook.com/okowformie"
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -141,7 +141,7 @@ exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O 
 </header>
 `;
 
-exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki (\`about.full_name\` z API) 1`] = `
+exports[`Header > dopasowuje snapshot z \`branding: null\` (błąd pobrania) — fallback na statyczne \`/brand/logo.png\`, bez linków social 1`] = `
 <header
   class="_siteHeader_a5b977"
 >
@@ -159,7 +159,81 @@ exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki
         <img
           alt=""
           class="_brandMark_a5b977"
-          src="/logo.png"
+          src="/brand/logo.png"
+        />
+      </a>
+    </div>
+  </div>
+  <p
+    class="_siteTitle_a5b977"
+  >
+    <span
+      class="_siteTitleName_a5b977"
+    >
+      <span
+        class="_siteTitleNameTeal_a5b977"
+      >
+        Oko
+      </span>
+       
+      <span
+        class="_siteTitleNameNavy_a5b977"
+      >
+        w
+      </span>
+       
+      <span
+        class="_siteTitleNameIndigo_a5b977"
+      >
+        Formie
+      </span>
+    </span>
+    <span
+      class="_siteTitleAuthor_a5b977"
+    >
+      Anna Kowalska
+    </span>
+  </p>
+  <nav
+    aria-label="Sekcje strony"
+    class="_tabs_a5b977"
+  >
+    <a
+      aria-current="page"
+      class="_tab_a5b977 _tabActive_a5b977"
+      href="/pl/o-mnie"
+    >
+      O mnie
+    </a>
+    <a
+      class="_tab_a5b977"
+      href="/pl/posty"
+    >
+      Posty
+    </a>
+  </nav>
+</header>
+`;
+
+exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki (\`about.full_name\` z API) oraz pełnym brandingiem (logo + 3 linki social) 1`] = `
+<header
+  class="_siteHeader_a5b977"
+>
+  <div
+    class="_brandBlock_a5b977"
+  >
+    <div
+      class="_brandLogoCol_a5b977"
+    >
+      <a
+        aria-label="okowFormie — strona główna"
+        class="_brandLogoLink_a5b977"
+        href="/pl/o-mnie"
+      >
+        <img
+          alt=""
+          class="_brandMark_a5b977"
+          src="http://backend:8000/media/branding/logo/abc123.png"
         />
       </a>
       <div
@@ -168,7 +242,7 @@ exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki
         <a
           aria-label="okowFormie na LinkedIn"
           class="_isLinkedin_a5b977"
-          href="#"
+          href="https://www.linkedin.com/company/okowformie"
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -185,7 +259,7 @@ exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki
         <a
           aria-label="okowFormie na Instagramie"
           class="_isInstagram_a5b977"
-          href="#"
+          href="https://www.instagram.com/okowformie"
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -220,7 +294,7 @@ exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki
         <a
           aria-label="okowFormie na Facebooku"
           class="_isFacebook_a5b977"
-          href="#"
+          href="https://www.facebook.com/okowformie"
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -235,6 +309,80 @@ exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki
           </svg>
         </a>
       </div>
+    </div>
+  </div>
+  <p
+    class="_siteTitle_a5b977"
+  >
+    <span
+      class="_siteTitleName_a5b977"
+    >
+      <span
+        class="_siteTitleNameTeal_a5b977"
+      >
+        Oko
+      </span>
+       
+      <span
+        class="_siteTitleNameNavy_a5b977"
+      >
+        w
+      </span>
+       
+      <span
+        class="_siteTitleNameIndigo_a5b977"
+      >
+        Formie
+      </span>
+    </span>
+    <span
+      class="_siteTitleAuthor_a5b977"
+    >
+      Anna Kowalska
+    </span>
+  </p>
+  <nav
+    aria-label="Sekcje strony"
+    class="_tabs_a5b977"
+  >
+    <a
+      aria-current="page"
+      class="_tab_a5b977 _tabActive_a5b977"
+      href="/pl/o-mnie"
+    >
+      O mnie
+    </a>
+    <a
+      class="_tab_a5b977"
+      href="/pl/posty"
+    >
+      Posty
+    </a>
+  </nav>
+</header>
+`;
+
+exports[`Header > dopasowuje snapshot z pustą \`social_links\` (panel jeszcze nieskonfigurowany) — logo z API, bez linków social 1`] = `
+<header
+  class="_siteHeader_a5b977"
+>
+  <div
+    class="_brandBlock_a5b977"
+  >
+    <div
+      class="_brandLogoCol_a5b977"
+    >
+      <a
+        aria-label="okowFormie — strona główna"
+        class="_brandLogoLink_a5b977"
+        href="/pl/o-mnie"
+      >
+        <img
+          alt=""
+          class="_brandMark_a5b977"
+          src="http://backend:8000/media/branding/logo/abc123.png"
+        />
+      </a>
     </div>
   </div>
   <p
