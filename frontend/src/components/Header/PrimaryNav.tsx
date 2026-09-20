@@ -15,6 +15,17 @@ interface PrimaryNavProps {
 }
 
 /**
+ * Czysta funkcja porównania (wydzielona z JSX, żeby dało się ją przetestować
+ * bez montowania komponentu/mockowania `usePathname()`). Wymaga granicy
+ * `/` po `href`, nie samego prefiksu — bez tego `/pl/postyxyz` fałszywie
+ * dopasowywałby się jako aktywny link do `/pl/posty` (współdzielony prefiks
+ * znaków, różny segment ścieżki).
+ */
+export function isActiveLink(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
  * Client component tylko dla aktywnego stanu linku (`usePathname()`) — reszta
  * headera zostaje server component. Prostsze niż przekazywanie bieżącej
  * ścieżki przez propsy z layoutu (który jej nie zna, patrz doc-komentarz
@@ -31,7 +42,7 @@ export function PrimaryNav({ lang, ariaLabel, aboutLabel, postsLabel }: PrimaryN
   return (
     <nav className={styles.tabs} aria-label={ariaLabel}>
       {links.map((link) => {
-        const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
+        const isActive = isActiveLink(pathname, link.href);
         return (
           <Link
             key={link.href}

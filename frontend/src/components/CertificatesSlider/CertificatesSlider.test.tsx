@@ -48,6 +48,12 @@ const certificates: Certificate[] = [
 ];
 
 describe("CertificatesSlider", () => {
+  it("dopasowuje snapshot w domyślnym, zamkniętym stanie", () => {
+    const { container } = render(<CertificatesSlider certificates={certificates} dict={dict} />);
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
   it("renderuje wszystkie przekazane certyfikaty", () => {
     render(<CertificatesSlider certificates={certificates} dict={dict} />);
 

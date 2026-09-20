@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AboutSection > dopasowuje snapshot bez certyfikatów (\`certificates: []\` — sekcja kursów/certyfikatów całkowicie pominięta) 1`] = `
+<h1
+  class="page-title"
+>
+  Anna Kowalska
+</h1>
+`;
+
+exports[`AboutSection > dopasowuje snapshot bez zdjęcia (\`photo === null\` — placeholder SVG zamiast \`<Image>\`) 1`] = `
+<h1
+  class="page-title"
+>
+  Anna Kowalska
+</h1>
+`;
+
+exports[`AboutSection > dopasowuje snapshot ze zdjęciem i certyfikatami 1`] = `
+<h1
+  class="page-title"
+>
+  Anna Kowalska
+</h1>
+`;

@@ -61,7 +61,8 @@ export async function generateMetadata({ params, searchParams }: PostsPageProps)
   };
 }
 
-function parsePage(raw: string | undefined): number {
+/** Eksportowana dla testów jednostkowych (`page.test.ts`) — reszta modułu jest RSC. */
+export function parsePage(raw: string | undefined): number {
   const parsed = Number(raw);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 }

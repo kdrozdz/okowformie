@@ -1,0 +1,67 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PostCard > dopasowuje snapshot bez okładki (\`cover_image === null\` — brak obrazu okładki, przypadek brzegowy z \`conventions.md\`) 1`] = `
+<a
+  class="_card_54fc83"
+  href="/pl/posty/dobor-soczewek-kontaktowych"
+>
+  <span
+    class="_thumbWrap_54fc83"
+  />
+  <span
+    class="_body_54fc83"
+  >
+    <h2
+      class="_title_54fc83"
+    >
+      Jak dobrać soczewki kontaktowe do pierwszej pary
+    </h2>
+    <p
+      class="_excerpt_54fc83"
+    >
+      Pierwsza wizyta po soczewki kontaktowe budzi sporo pytań — tłumaczę krok po kroku, na co zwrócić uwagę.
+    </p>
+    <p
+      class="_date_54fc83"
+    >
+      14 marca 2026
+    </p>
+  </span>
+</a>
+`;
+
+exports[`PostCard > dopasowuje snapshot z okładką (\`cover_image\` obecny) 1`] = `
+<a
+  class="_card_54fc83"
+  href="/pl/posty/dobor-soczewek-kontaktowych"
+>
+  <span
+    class="_thumbWrap_54fc83"
+  >
+    <img
+      alt="Zbliżenie na soczewkę kontaktową na opuszku palca"
+      class="_thumbImage_54fc83"
+      src="http://backend:8000/media/posty/soczewki.jpg"
+    />
+  </span>
+  <span
+    class="_body_54fc83"
+  >
+    <h2
+      class="_title_54fc83"
+    >
+      Jak dobrać soczewki kontaktowe do pierwszej pary
+    </h2>
+    <p
+      class="_excerpt_54fc83"
+    >
+      Pierwsza wizyta po soczewki kontaktowe budzi sporo pytań — tłumaczę krok po kroku, na co zwrócić uwagę.
+    </p>
+    <p
+      class="_date_54fc83"
+    >
+      14 marca 2026
+    </p>
+  </span>
+</a>
+`;

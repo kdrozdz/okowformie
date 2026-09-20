@@ -1,0 +1,103 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Footer > dopasowuje snapshot (EN) — inny słownik, ten sam markup 1`] = `
+<footer
+  class="_siteFooter_acfd2c"
+>
+  <div
+    class="_footerTop_acfd2c"
+  >
+    <div>
+      <p
+        class="_footerBrandRow_acfd2c"
+      >
+        <img
+          alt=""
+          src="/logo.png"
+        />
+        <span>
+          okowFormie
+        </span>
+      </p>
+      <p
+        class="_footerTagline_acfd2c"
+      >
+        A blog about eye health, vision therapy and optometry.
+      </p>
+    </div>
+    <nav
+      aria-label="Site sections"
+      class="_footerLinks_acfd2c"
+    >
+      <a
+        href="/en/o-mnie"
+      >
+        About
+      </a>
+      <a
+        href="/en/posty"
+      >
+        Posts
+      </a>
+    </nav>
+  </div>
+  <div
+    class="_footerBottom_acfd2c"
+  >
+    <p>
+      © 2026 okowFormie. All rights reserved.
+    </p>
+  </div>
+</footer>
+`;
+
+exports[`Footer > dopasowuje snapshot (PL) 1`] = `
+<footer
+  class="_siteFooter_acfd2c"
+>
+  <div
+    class="_footerTop_acfd2c"
+  >
+    <div>
+      <p
+        class="_footerBrandRow_acfd2c"
+      >
+        <img
+          alt=""
+          src="/logo.png"
+        />
+        <span>
+          okowFormie
+        </span>
+      </p>
+      <p
+        class="_footerTagline_acfd2c"
+      >
+        Blog o zdrowiu wzroku, terapii widzenia i optometrii.
+      </p>
+    </div>
+    <nav
+      aria-label="Sekcje strony"
+      class="_footerLinks_acfd2c"
+    >
+      <a
+        href="/pl/o-mnie"
+      >
+        O mnie
+      </a>
+      <a
+        href="/pl/posty"
+      >
+        Posty
+      </a>
+    </nav>
+  </div>
+  <div
+    class="_footerBottom_acfd2c"
+  >
+    <p>
+      © 2026 okowFormie. Wszelkie prawa zastrzeżone.
+    </p>
+  </div>
+</footer>
+`;
