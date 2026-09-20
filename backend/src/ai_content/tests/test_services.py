@@ -119,6 +119,49 @@ def test_create_draft_post_mapuje_pola_na_post_i_translation(
     assert translation.slug != ""
 
 
+def test_create_draft_post_sanityzuje_wstrzykniety_tag_script(author: Any) -> None:
+    """Treść wygenerowana przez LLM to wciąż niezaufane wejście — nawet gdyby
+    model zignorował instrukcję o dozwolonych tagach (`_build_system_prompt`),
+    zapis przez `PostTranslation.save()` (`.claude/rules/security.md`) ma
+    usunąć `<script>` niezależnie od tej ścieżki wywołania, tak samo jak przy
+    zapisie z panelu redakcyjnego."""
+    malicious = GeneratedPostContent(
+        title="Soczewki kontaktowe",
+        excerpt="Zajawka",
+        content='<p>Bezpieczny akapit</p><script>alert("xss")</script>',
+        meta_title="Tytuł SEO",
+        meta_description="Opis SEO",
+        cover_image_alt="Alt okładki",
+        seo_rationale="Uzasadnienie",
+    )
+
+    post = create_draft_post_from_generated_content(malicious, author=author)
+
+    translation = PostTranslation.objects.get(master=post, language_code=Language.PL)
+    assert "<script" not in translation.content
+    assert "<p>Bezpieczny akapit</p>" in translation.content
+
+
+def test_create_draft_post_usuwa_handler_onerror(author: Any) -> None:
+    """Analogicznie do `<script>`, ale dla atrybutu `onerror` (XSS przez
+    handler zdarzenia na dozwolonym tagu `<img>`, nie przez zabroniony tag)."""
+    malicious = GeneratedPostContent(
+        title="Soczewki kontaktowe",
+        excerpt="Zajawka",
+        content='<img src="x.jpg" onerror="alert(1)" alt="Opis">',
+        meta_title="Tytuł SEO",
+        meta_description="Opis SEO",
+        cover_image_alt="Alt okładki",
+        seo_rationale="Uzasadnienie",
+    )
+
+    post = create_draft_post_from_generated_content(malicious, author=author)
+
+    translation = PostTranslation.objects.get(master=post, language_code=Language.PL)
+    assert "onerror" not in translation.content
+    assert 'alt="Opis"' in translation.content
+
+
 def test_create_draft_post_z_za_dlugim_polem_podnosi_blad_i_nie_zostawia_posta(author: Any) -> None:
     # `model_construct` omija walidację Pydantic — symuluje model LLM, który
     # zignorował limit długości mimo instrukcji w promptcie.

@@ -3,6 +3,7 @@
 from typing import Any
 
 import pytest
+from django.core.exceptions import ValidationError
 
 from ai_content.constants import AIProvider
 from ai_content.models import AIProviderSettings, PostGenerator
@@ -62,3 +63,54 @@ def test_zapis_przez_proxy_jest_widoczny_przez_model_bazowy(db: Any) -> None:
     generator.save()
 
     assert AIProviderSettings.objects.filter(pk=generator.pk, model_name="gpt-proxy").exists()
+
+
+# --- Walidatory zakresu (`temperature`, `max_output_tokens`) ----------------
+
+
+@pytest.mark.parametrize("temperature", [-0.1, 2.1])
+def test_temperatura_poza_zakresem_0_2_jest_odrzucana_przez_full_clean(
+    db: Any, temperature: float
+) -> None:
+    """`temperature` ma sens tylko w [0, 2] (`MinValueValidator(0)`,
+    `MaxValueValidator(2)`) — wartość spoza tego zakresu nie jest tym, czego
+    oczekuje żaden SDK providera LangChain."""
+    settings_obj = AIProviderSettings(
+        provider=AIProvider.ANTHROPIC,
+        model_name="claude-test",
+        temperature=temperature,
+        max_output_tokens=4000,
+    )
+
+    with pytest.raises(ValidationError) as error:
+        settings_obj.full_clean()
+
+    assert "temperature" in error.value.message_dict
+
+
+@pytest.mark.parametrize("temperature", [0, 2])
+def test_temperatura_na_granicy_zakresu_jest_akceptowana(db: Any, temperature: float) -> None:
+    settings_obj = AIProviderSettings(
+        provider=AIProvider.ANTHROPIC,
+        model_name="claude-test",
+        temperature=temperature,
+        max_output_tokens=4000,
+    )
+
+    settings_obj.full_clean()  # nie powinno podnieść ValidationError
+
+
+def test_max_output_tokens_ponizej_1_jest_odrzucany_przez_full_clean(db: Any) -> None:
+    """`max_output_tokens` musi być dodatni (`MinValueValidator(1)`) — `0` albo
+    ujemna wartość oznaczałaby wywołanie LLM z limitem, który nic nie zwróci."""
+    settings_obj = AIProviderSettings(
+        provider=AIProvider.ANTHROPIC,
+        model_name="claude-test",
+        temperature=0.7,
+        max_output_tokens=0,
+    )
+
+    with pytest.raises(ValidationError) as error:
+        settings_obj.full_clean()
+
+    assert "max_output_tokens" in error.value.message_dict
