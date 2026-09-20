@@ -1,0 +1,76 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PostDetail > dopasowuje snapshot bez okładki (\`cover_image === null\` — przypadek brzegowy z \`conventions.md\`) 1`] = `
+<article>
+  <a
+    class="_back_158fef"
+    href="/pl/posty"
+  >
+    ← 
+    Wróć do listy
+  </a>
+  <h1
+    class="page-title"
+  >
+    Jak dobrać soczewki kontaktowe do pierwszej pary
+  </h1>
+  <p
+    class="_date_158fef"
+  >
+    14 marca 2026
+  </p>
+  <div
+    class="_body_158fef"
+  >
+    <p>
+      Pierwszym krokiem jest 
+      <strong>
+        pomiar krzywizny rogówki
+      </strong>
+      .
+    </p>
+  </div>
+</article>
+`;
+
+exports[`PostDetail > dopasowuje snapshot z okładką (\`cover_image\` obecny) 1`] = `
+<article>
+  <a
+    class="_back_158fef"
+    href="/pl/posty"
+  >
+    ← 
+    Wróć do listy
+  </a>
+  <div
+    class="_coverWrap_158fef"
+  >
+    <img
+      alt="Zbliżenie na soczewkę kontaktową na opuszku palca"
+      class="_coverImage_158fef"
+      src="http://backend:8000/media/posty/soczewki.jpg"
+    />
+  </div>
+  <h1
+    class="page-title"
+  >
+    Jak dobrać soczewki kontaktowe do pierwszej pary
+  </h1>
+  <p
+    class="_date_158fef"
+  >
+    14 marca 2026
+  </p>
+  <div
+    class="_body_158fef"
+  >
+    <p>
+      Pierwszym krokiem jest 
+      <strong>
+        pomiar krzywizny rogówki
+      </strong>
+      .
+    </p>
+  </div>
+</article>
+`;

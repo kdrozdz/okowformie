@@ -1,0 +1,111 @@
+.headline {
+  margin: -1rem 0 1.5rem;
+  font-size: 1.1rem;
+  color: var(--ink-muted);
+}
+
+.about {
+  display: flex;
+  gap: 1.75rem;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.avatarWrap {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  flex-shrink: 0;
+}
+
+.blob {
+  position: absolute;
+  inset: -14px;
+  background: linear-gradient(135deg, #dce6ef, #e9e4f5);
+  border-radius: 62% 38% 55% 45% / 45% 55% 45% 55%;
+  z-index: 0;
+}
+
+.avatar {
+  position: relative;
+  z-index: 1;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #6fb3b6, var(--indigo) 70%, var(--navy));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  width: 46px;
+  height: 46px;
+}
+
+.text p {
+  margin: 0 0 0.9rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.text :global(p):last-child {
+  margin-bottom: 0;
+}
+
+.courses {
+  margin: 1.4rem 0 0;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--border);
+}
+
+.coursesHeader {
+  margin: 0 0 1.1rem;
+}
+
+.coursesHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.coursesTitle {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0;
+}
+
+.coursesCount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.coursesCountNumber {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--indigo);
+}
+
+.coursesCountLabel {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 480px) {
+  .about {
+    flex-direction: column;
+  }
+}

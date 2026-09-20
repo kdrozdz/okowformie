@@ -1,5 +1,7 @@
 """URL configuration dla projektu `backend`."""
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpRequest, JsonResponse
 from django.urls import include, path
@@ -27,3 +29,11 @@ urlpatterns = [
     path("api/v1/", include("blog.urls")),
     path("api/v1/", include("about.urls")),
 ]
+
+if settings.DEBUG:
+    # Serwowanie mediów przez Django samo tylko w dev — na produkcji obrazy
+    # idą przez reverse proxy/CDN, nigdy przez proces aplikacji
+    # (`.claude/rules/security.md`). Bez tego `MEDIA_URL` zwrócony przez
+    # publiczne API (okładki postów, zdjęcie i certyfikaty „O mnie") jest
+    # martwym linkiem w lokalnym środowisku.
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

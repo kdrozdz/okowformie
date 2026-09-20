@@ -15,7 +15,10 @@ db.sqlite3
 htmlcov/
 # Domyślny MEDIA_ROOT, zanim ustalimy docelowy storage (S3 vs VPS) — patrz
 # otwarta decyzja w CLAUDE.md. Uploady deweloperskie nie trafiają do repo.
-media/
+# Zakotwiczone do konkretnej ścieżki (nie bare `media/`) — bez `/` z przodu
+# ta reguła łapała też `frontend/src/lib/media/`, katalog kodu źródłowego,
+# nie uploadów.
+/backend/media/
 
 # --- Frontend (Next.js / Node) ---
 node_modules/

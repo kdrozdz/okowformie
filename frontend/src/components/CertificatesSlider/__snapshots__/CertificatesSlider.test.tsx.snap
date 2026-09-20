@@ -1,0 +1,127 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CertificatesSlider > dopasowuje snapshot w domyślnym, zamkniętym stanie 1`] = `
+<div
+  class="_sliderWrap_9c5073"
+>
+  <button
+    aria-label="Przewiń w lewo"
+    class="_arrow_9c5073 _arrowPrev_9c5073"
+    disabled=""
+    type="button"
+  >
+    <svg
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M15 5l-7 7 7 7"
+      />
+    </svg>
+  </button>
+  <div
+    class="_slider_9c5073"
+  >
+    <button
+      class="_certThumb_9c5073"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        class="_certThumbIcon_9c5073"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        viewBox="0 0 24 24"
+      >
+        <rect
+          height="13"
+          rx="2"
+          width="16"
+          x="4"
+          y="3"
+        />
+        <path
+          d="M8 7h8M8 10h5"
+        />
+        <path
+          d="M9 16v4l3-1.5L15 20v-4"
+        />
+      </svg>
+      <span
+        class="_certThumbLabel_9c5073"
+      >
+        Terapia widzenia I
+      </span>
+    </button>
+    <button
+      class="_certThumb_9c5073"
+      type="button"
+    >
+      <img
+        alt=""
+        class="_certThumbImage_9c5073"
+        src="http://localhost:8000/media/certyfikat-2.jpg"
+      />
+      <span
+        class="_certThumbLabel_9c5073"
+      >
+        Ortoptyka — kurs bazowy
+      </span>
+    </button>
+    <button
+      class="_certThumb_9c5073"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        class="_certThumbIcon_9c5073"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        viewBox="0 0 24 24"
+      >
+        <rect
+          height="13"
+          rx="2"
+          width="16"
+          x="4"
+          y="3"
+        />
+        <path
+          d="M8 7h8M8 10h5"
+        />
+        <path
+          d="M9 16v4l3-1.5L15 20v-4"
+        />
+      </svg>
+      <span
+        class="_certThumbLabel_9c5073"
+      >
+        Certyfikat optometrii
+      </span>
+    </button>
+  </div>
+  <button
+    aria-label="Przewiń w prawo"
+    class="_arrow_9c5073 _arrowNext_9c5073"
+    disabled=""
+    type="button"
+  >
+    <svg
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M9 5l7 7-7 7"
+      />
+    </svg>
+  </button>
+</div>
+`;

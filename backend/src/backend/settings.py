@@ -53,6 +53,14 @@ CSRF_TRUSTED_ORIGINS = _env_list("CSRF_TRUSTED_ORIGINS")
 # --- Aplikacje ------------------------------------------------------------
 
 INSTALLED_APPS = [
+    # Projekt sam jako "app" bez modeli — jedyny sposób, żeby Django w ogóle
+    # znalazł polecenia w `backend/management/commands/` (np. `seed_demo_data`,
+    # kompozycyjny skrypt seedujący `blog` i `about` naraz: obie domeny celowo
+    # się nie importują nawzajem, `.claude/rules/scope.md`, więc taki skrypt
+    # nie pasuje do żadnej z nich). `get_commands()` w Django skanuje wyłącznie
+    # `INSTALLED_APPS` — bez wpisu tutaj katalog `management/` na poziomie
+    # projektu byłby po prostu niewidoczny dla `manage.py`.
+    "backend",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -206,6 +214,15 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # (`.claude/rules/scope.md`).
 MEDIA_URL = os.environ.get("MEDIA_URL", "media/")
 MEDIA_ROOT = os.environ.get("MEDIA_ROOT") or BASE_DIR / "media"
+
+# Publiczny adres serwisu, do budowania absolutnych URL-i obrazów w API
+# (`about.serializers`, `blog.serializers`). Celowo NIE `request.build_absolute_uri()`:
+# ten helper bierze host z nagłówka `Host` PRZYCHODZĄCEGO żądania, a żądania do
+# API bywają wołane server-side z innego kontenera/adresu niż publiczna domena
+# (np. frontend Next.js łączący się przez `http://backend:8000` wewnątrz sieci
+# docker compose) — wtedy `og:image`/JSON-LD dostałyby wewnętrzny, nieosiągalny
+# z zewnątrz adres zamiast publicznego.
+SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

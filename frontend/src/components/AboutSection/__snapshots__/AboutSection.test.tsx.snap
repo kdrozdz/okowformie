@@ -1,0 +1,387 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AboutSection > dopasowuje snapshot bez certyfikatów (\`certificates: []\` — sekcja kursów/certyfikatów całkowicie pominięta) 1`] = `
+<DocumentFragment>
+  <h1
+    class="page-title"
+  >
+    Anna Kowalska
+  </h1>
+  <p
+    class="_headline_31cd76"
+  >
+    Optometrystka, terapeutka widzenia
+  </p>
+  <div
+    class="_about_31cd76"
+  >
+    <div
+      class="_avatarWrap_31cd76"
+    >
+      <div
+        aria-hidden="true"
+        class="_blob_31cd76"
+      />
+      <div
+        class="_avatar_31cd76"
+      >
+        <img
+          alt="Portret Anny Kowalskiej"
+          class="_avatarPhoto_31cd76"
+          src="http://backend:8000/media/anna-kowalska.jpg"
+        />
+      </div>
+    </div>
+    <div
+      class="_text_31cd76"
+    >
+      <p>
+        Od 10 lat pomagam pacjentom dobrać soczewki kontaktowe i okulary.
+      </p>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`AboutSection > dopasowuje snapshot bez zdjęcia (\`photo === null\` — placeholder SVG zamiast \`<Image>\`) 1`] = `
+<DocumentFragment>
+  <h1
+    class="page-title"
+  >
+    Anna Kowalska
+  </h1>
+  <p
+    class="_headline_31cd76"
+  >
+    Optometrystka, terapeutka widzenia
+  </p>
+  <div
+    class="_about_31cd76"
+  >
+    <div
+      class="_avatarWrap_31cd76"
+    >
+      <div
+        aria-hidden="true"
+        class="_blob_31cd76"
+      />
+      <div
+        class="_avatar_31cd76"
+      >
+        <svg
+          aria-hidden="true"
+          class="_avatarPlaceholder_31cd76"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M2 12C4.5 7 8 4.5 12 4.5S19.5 7 22 12C19.5 17 16 19.5 12 19.5S4.5 17 2 12Z"
+            stroke="white"
+            stroke-width="1.4"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            fill="white"
+            r="3.4"
+          />
+        </svg>
+      </div>
+    </div>
+    <div
+      class="_text_31cd76"
+    >
+      <p>
+        Od 10 lat pomagam pacjentom dobrać soczewki kontaktowe i okulary.
+      </p>
+    </div>
+  </div>
+  <div
+    class="_courses_31cd76"
+  >
+    <div
+      class="_coursesHeader_31cd76"
+    >
+      <div
+        class="_coursesHeading_31cd76"
+      >
+        <h2
+          class="_coursesTitle_31cd76"
+        >
+          Moje kursy, szkolenia, certyfikaty
+        </h2>
+        <div
+          class="_coursesCount_31cd76"
+        >
+          <span
+            class="_coursesCountNumber_31cd76"
+          >
+            2
+          </span>
+          <span
+            class="_coursesCountLabel_31cd76"
+          >
+            łącznie
+          </span>
+        </div>
+      </div>
+    </div>
+    <div
+      class="_sliderWrap_9c5073"
+    >
+      <button
+        aria-label="Przewiń w lewo"
+        class="_arrow_9c5073 _arrowPrev_9c5073"
+        disabled=""
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M15 5l-7 7 7 7"
+          />
+        </svg>
+      </button>
+      <div
+        class="_slider_9c5073"
+      >
+        <button
+          class="_certThumb_9c5073"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="_certThumbIcon_9c5073"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            viewBox="0 0 24 24"
+          >
+            <rect
+              height="13"
+              rx="2"
+              width="16"
+              x="4"
+              y="3"
+            />
+            <path
+              d="M8 7h8M8 10h5"
+            />
+            <path
+              d="M9 16v4l3-1.5L15 20v-4"
+            />
+          </svg>
+          <span
+            class="_certThumbLabel_9c5073"
+          >
+            Terapia widzenia I
+          </span>
+        </button>
+        <button
+          class="_certThumb_9c5073"
+          type="button"
+        >
+          <img
+            alt=""
+            class="_certThumbImage_9c5073"
+            src="http://backend:8000/media/certyfikat-2.jpg"
+          />
+          <span
+            class="_certThumbLabel_9c5073"
+          >
+            Ortoptyka — kurs bazowy
+          </span>
+        </button>
+      </div>
+      <button
+        aria-label="Przewiń w prawo"
+        class="_arrow_9c5073 _arrowNext_9c5073"
+        disabled=""
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`AboutSection > dopasowuje snapshot ze zdjęciem i certyfikatami 1`] = `
+<DocumentFragment>
+  <h1
+    class="page-title"
+  >
+    Anna Kowalska
+  </h1>
+  <p
+    class="_headline_31cd76"
+  >
+    Optometrystka, terapeutka widzenia
+  </p>
+  <div
+    class="_about_31cd76"
+  >
+    <div
+      class="_avatarWrap_31cd76"
+    >
+      <div
+        aria-hidden="true"
+        class="_blob_31cd76"
+      />
+      <div
+        class="_avatar_31cd76"
+      >
+        <img
+          alt="Portret Anny Kowalskiej"
+          class="_avatarPhoto_31cd76"
+          src="http://backend:8000/media/anna-kowalska.jpg"
+        />
+      </div>
+    </div>
+    <div
+      class="_text_31cd76"
+    >
+      <p>
+        Od 10 lat pomagam pacjentom dobrać soczewki kontaktowe i okulary.
+      </p>
+    </div>
+  </div>
+  <div
+    class="_courses_31cd76"
+  >
+    <div
+      class="_coursesHeader_31cd76"
+    >
+      <div
+        class="_coursesHeading_31cd76"
+      >
+        <h2
+          class="_coursesTitle_31cd76"
+        >
+          Moje kursy, szkolenia, certyfikaty
+        </h2>
+        <div
+          class="_coursesCount_31cd76"
+        >
+          <span
+            class="_coursesCountNumber_31cd76"
+          >
+            2
+          </span>
+          <span
+            class="_coursesCountLabel_31cd76"
+          >
+            łącznie
+          </span>
+        </div>
+      </div>
+    </div>
+    <div
+      class="_sliderWrap_9c5073"
+    >
+      <button
+        aria-label="Przewiń w lewo"
+        class="_arrow_9c5073 _arrowPrev_9c5073"
+        disabled=""
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M15 5l-7 7 7 7"
+          />
+        </svg>
+      </button>
+      <div
+        class="_slider_9c5073"
+      >
+        <button
+          class="_certThumb_9c5073"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="_certThumbIcon_9c5073"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            viewBox="0 0 24 24"
+          >
+            <rect
+              height="13"
+              rx="2"
+              width="16"
+              x="4"
+              y="3"
+            />
+            <path
+              d="M8 7h8M8 10h5"
+            />
+            <path
+              d="M9 16v4l3-1.5L15 20v-4"
+            />
+          </svg>
+          <span
+            class="_certThumbLabel_9c5073"
+          >
+            Terapia widzenia I
+          </span>
+        </button>
+        <button
+          class="_certThumb_9c5073"
+          type="button"
+        >
+          <img
+            alt=""
+            class="_certThumbImage_9c5073"
+            src="http://backend:8000/media/certyfikat-2.jpg"
+          />
+          <span
+            class="_certThumbLabel_9c5073"
+          >
+            Ortoptyka — kurs bazowy
+          </span>
+        </button>
+      </div>
+      <button
+        aria-label="Przewiń w prawo"
+        class="_arrow_9c5073 _arrowNext_9c5073"
+        disabled=""
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</DocumentFragment>
+`;

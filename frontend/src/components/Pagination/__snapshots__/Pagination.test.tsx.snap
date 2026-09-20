@@ -1,0 +1,61 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Pagination > dopasowuje snapshot na ostatniej stronie (hasPrevious=true, hasNext=false) 1`] = `
+<nav
+  aria-label="Stronicowanie"
+  class="_pagination_de4934"
+>
+  <a
+    class="_link_de4934"
+    href="/pl/posty?page=2"
+  >
+    ← 
+    Poprzednia strona
+  </a>
+  <span
+    aria-hidden="true"
+    class="_spacer_de4934"
+  />
+</nav>
+`;
+
+exports[`Pagination > dopasowuje snapshot na pierwszej stronie (hasPrevious=false, hasNext=true) 1`] = `
+<nav
+  aria-label="Stronicowanie"
+  class="_pagination_de4934"
+>
+  <span
+    aria-hidden="true"
+    class="_spacer_de4934"
+  />
+  <a
+    class="_link_de4934"
+    href="/pl/posty?page=2"
+  >
+    Następna strona
+     →
+  </a>
+</nav>
+`;
+
+exports[`Pagination > dopasowuje snapshot na stronie środkowej (hasPrevious=true, hasNext=true) 1`] = `
+<nav
+  aria-label="Stronicowanie"
+  class="_pagination_de4934"
+>
+  <a
+    class="_link_de4934"
+    href="/pl/posty?page=1"
+  >
+    ← 
+    Poprzednia strona
+  </a>
+  <a
+    class="_link_de4934"
+    href="/pl/posty?page=3"
+  >
+    Następna strona
+     →
+  </a>
+</nav>
+`;

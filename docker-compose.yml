@@ -76,6 +76,13 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000}
       ADMIN_URL: ${ADMIN_URL:-panel-redakcyjny/}
+      # Publiczny adres serwisu, do budowania absolutnych URL-i obrazów w API
+      # (`photo`/`certificate.image`/`cover_image`) — NIE nazwa usługi w sieci
+      # compose. Wartość celowo `localhost:8000`: to host, pod którym API jest
+      # wywoływalne z przeglądarki ORAZ przez `next/image`'s `/_next/image`
+      # (patrz `frontend/next.config.ts` `remotePatterns`) — ten sam adres,
+      # którym frontend już configuruje dostęp do mediów z hosta.
+      SITE_URL: ${SITE_URL:-http://localhost:8000}
       POSTGRES_DB: ${POSTGRES_DB:-backend}
       POSTGRES_USER: ${POSTGRES_USER:-backend}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
@@ -122,6 +129,17 @@ services:
       # klienckiego, więc musi być wywoływalny przez przeglądarkę na hoście,
       # która nie jest częścią sieci compose.
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Server-only (bez `NEXT_PUBLIC_`, więc Next.js nie wypieka jej do bundla
+      # klienckiego). Używana przez fetch wykonywany wewnątrz kontenera
+      # `frontend` (Server Components, `generateMetadata`, `generateStaticParams`)
+      # — tam `localhost` to sam kontener `frontend`, nie `backend`, więc
+      # wartość musi wskazywać na nazwę usługi w sieci compose.
+      API_URL: ${API_URL:-http://backend:8000}
+      # Public base URL of the frontend itself, reachable from the browser —
+      # used as `metadataBase` (app/layout.tsx) so relative canonical/OG
+      # URLs resolve correctly. Public by definition, not a secret, hence
+      # `NEXT_PUBLIC_`.
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     volumes:
       - ./frontend:/app
       # Analogicznie do `backend-venv`: chroni `node_modules` i `.next`

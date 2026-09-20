@@ -11,6 +11,7 @@ from datetime import datetime
 
 from rest_framework import serializers
 
+from core.api import absolute_media_url
 from core.constants import PUBLIC_STATUS
 
 from .models import AboutMe, AboutMeTranslation, Certificate
@@ -32,9 +33,7 @@ class CertificateSerializer(serializers.Serializer):
     def get_image(self, certificate: Certificate) -> str | None:
         if not certificate.image:
             return None
-        request = self.context.get("request")
-        url = certificate.image.url
-        return request.build_absolute_uri(url) if request is not None else url
+        return absolute_media_url(certificate.image.url)
 
 
 class AboutDetailSerializer(serializers.Serializer):
@@ -71,9 +70,7 @@ class AboutDetailSerializer(serializers.Serializer):
     def get_photo(self, about: AboutMe) -> str | None:
         if not about.photo:
             return None
-        request = self.context.get("request")
-        url = about.photo.url
-        return request.build_absolute_uri(url) if request is not None else url
+        return absolute_media_url(about.photo.url)
 
     def get_photo_alt(self, about: AboutMe) -> str:
         return self._translation(about).photo_alt
