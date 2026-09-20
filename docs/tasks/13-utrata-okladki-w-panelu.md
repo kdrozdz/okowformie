@@ -1,9 +1,10 @@
-# Utrata okładki przy błędzie walidacji w panelu
+# Utrata okładki przy błędzie walidacji w panelu i przycinanie obrazów
 
 - **Cel:** panel redakcyjny ma ostrzegać redaktora, gdy wybrany obraz okładki
   zniknie z formularza po błędzie walidacji, zamiast po cichu zapisywać post
-  bez okładki.
-- **Status:** gotowe
+  bez okładki. Dodatkowo (zgłoszenie 2, ten sam branch): okładka posta i
+  powiększenie certyfikatu mają pokazywać cały wgrany obraz, bez przycinania.
+- **Status:** w toku (zgłoszenie 2 w review)
 
 ## Kontekst
 
@@ -50,3 +51,98 @@ błędów, zanim zapisze się ponownie.
 ## Decyzje po drodze
 Brak zmian architektonicznych — poprawka lokalna do `blog/forms.py`, bez
 zmiany kontraktu API ani schematu bazy.
+
+---
+
+## Zgłoszenie 2: przycinanie obrazów (okładka posta, certyfikat)
+
+Niepowiązane ze zgłoszeniem 1 (inny mechanizm, inny obszar kodu) — dołożone
+na ten sam branch/task na wyraźną decyzję, zamiast otwierać osobny task.
+
+### Kontekst
+
+Zgłoszenie: dodane zdjęcie w poście nie jest wyświetlane w całości; ten sam
+objaw na liście postów, w szczegółach posta i w sekcji certyfikatów.
+Zreprodukowane przez użytkownika: zrzut ekranu użyty jako okładka i jako
+certyfikat pokazywał tylko wycentrowany fragment.
+
+Diagnoza: w 4 niezależnych miejscach powielony ten sam wzorzec CSS —
+kontener o wymuszonych proporcjach (`aspect-ratio`/stałe wymiary) +
+`overflow: hidden` + `next/image (fill)` z `object-fit: cover`. `cover`
+z definicji przycina obraz, gdy jego proporcje nie pasują do kontenera.
+Backend niczego nie przycina (brak resize/crop w `core/image_processing.py`)
+— oryginalne proporcje trafiają do frontendu.
+
+Zasada rozstrzygająca (ustalona z `uiux-agent`): kafel-skrót w gęstej liście
+→ crop dopuszczalny (pełna treść o klik dalej); widok definitywny (hero
+posta, otwarty lightbox) → nigdy crop (nie ma dalszego kroku, przycięcie =
+trwała utrata treści).
+
+Przy okazji zdiagnozowany, ale **nieściągnięty do tego taska**, osobny bug:
+favicon (`frontend/src/app/icon.tsx`) serwuje surowe bajty logo z API bez
+faktycznego resize'u do 32×32 — przeglądarka sama dociąga center-crop.
+Niepowiązane z tym zgłoszeniem (inny mechanizm — brak przetwarzania obrazu,
+nie CSS), do rozważenia jako osobny task.
+
+### Zmiana
+
+- `frontend/src/components/PostDetail/PostDetail.module.css`:
+  `.coverImage` `object-fit: cover` → `contain` (widok definitywny okładki).
+  Dodane reguły `.body :global(img/figure/figcaption)` — obrazy wklejone
+  przez WYSIWYG skalują się w dół zamiast przepełniać kolumnę treści.
+- `frontend/src/components/CertificatesSlider/CertificatesSlider.module.css`
+  i `.tsx`: `.lightboxImage` traci wymuszony `aspect-ratio: 1` (kwadrat),
+  dostaje `height: min(64vh, 600px)`; `.lightboxImg` `cover` → `contain`;
+  nowa klasa `.lightboxImagePlaceholder` zachowuje branded gradient w
+  stanie pustym (brak zdjęcia certyfikatu).
+- `.certThumbImage` (miniatura certyfikatu, kafel): zostaje `cover`, dodane
+  `object-position: top`, żeby nagłówek typowego skanu dyplomu nie ginął
+  w domyślnym środkowym kadrowaniu.
+- `PostList.module.css` (miniatura na liście postów): świadomie bez zmian —
+  kafel-skrót, crop akceptowalny.
+
+### Plan
+- [x] Zdiagnozować root cause (4 niezależne miejsca z `object-fit: cover`)
+- [x] Spec UX (`uiux-agent`) — gdzie crop akceptowalny, gdzie nie
+- [x] Wdrożenie (`frontend-agent`)
+- [x] `npm run lint` i `npm run typecheck` — czyste
+- [x] `qa-agent` review — GO, dopisane 2 testy regresyjne dla stanu pustego
+      lightboksa (`CertificatesSlider.test.tsx`), pełna suita 68/68 zielona
+- [x] `/code-review` (medium) — bez błędów poprawności w diffie; jedno
+      znalezisko naprawione od razu (patrz niżej), reszta to follow-upy
+      poza plikami tego diffa
+- [x] Refaktor: 5× ręczne sklejanie klas przez template literal w
+      `CertificatesSlider.tsx` → lokalny helper `cx()` (bez nowej zależności,
+      identyczna kolejność klas, testy nadal zielone)
+- [x] Sprawdzone na żywo (curl na działający kontener `okowformie-frontend-1`,
+      hot-reload podchwycił zmiany): skompilowany CSS serwowany przez dev
+      server zawiera dokładnie oczekiwane reguły — `.coverImage{object-fit:
+      contain}`, `.body img{max-width:100%;...}`, `.lightboxImg{object-fit:
+      contain}`, `.lightboxImagePlaceholder{...}`, `.certThumbImage{object-fit:
+      cover;object-position:top}`, `.avatarPhoto{object-fit:cover}` (bez
+      zmian, zgodnie z planem). Brak w tym środowisku narzędzia do sterowania
+      przeglądarką (`chromium-cli` niedostępne) — to nie jest zrzut ekranu,
+      tylko potwierdzenie, że właściwy CSS faktycznie dotarł do przeglądarki;
+      pełny wizualny smoke-test (obraz pionowy/poziomy) zostaje do
+      ręcznej weryfikacji przez użytkownika przed/po mergu.
+- [ ] Merge do `dev`
+
+### Follow-upy z `/code-review` (świadomie nieujęte w tym tasku — inne pliki/domena)
+- `about/forms.py` ma tę samą lukę co pierwotny bug ze zgłoszenia 1
+  (`photo`/`photo_alt` bez ostrzeżenia o utracie pliku) — kandydat do
+  wydzielenia współdzielonej logiki do `core` zamiast kopiowania do
+  `blog`/`about` osobno (`.claude/rules/scope.md`).
+- `AboutSection.module.css` (`.text`, ta sama treść WYSIWYG co `about.bio`)
+  nie ma analogicznych reguł dla `img`/`figure`/`figcaption` co dodane tu
+  w `PostDetail.module.css` — ten sam defekt, jeszcze nie zgłoszony na
+  `/o-mnie`.
+- `object-fit` (cover vs. contain) ustawiany niezależnie w 6+ miejscach —
+  zasada rozstrzygająca żyje tylko w tym pliku planu, nie w kodzie; warto
+  rozważyć wspólny komponent/hook, żeby kolejne miejsce nie kopiowało
+  losowej wartości z sąsiedztwa.
+- `PostAdminForm` (zgłoszenie 1, już "gotowe") ostrzega, ale nie odzyskuje
+  utraconego pliku — technicznie plik jest w `request.FILES` w momencie
+  błędu, mógłby zostać zachowany (np. tymczasowo) zamiast wymagać
+  ponownego wyboru. Świadomie zaakceptowany wcześniej jako płytsza,
+  wystarczająca poprawka — do rewizji, jeśli redaktorzy będą się dalej
+  mylić mimo ostrzeżenia.
