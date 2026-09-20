@@ -44,7 +44,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={lang} className={`${sora.variable} ${karla.variable}`}>
-      <body>{children}</body>
+      {/* Rozszerzenia przeglądarki (np. ColorZilla) dopisują własne atrybuty
+          do <body> (np. `cz-shortcut-listen`) zanim React się zhydratuje —
+          znany, nieszkodliwy fałszywy alarm hydratacji, udokumentowany
+          wprost przez Next.js/React jako powód do `suppressHydrationWarning`
+          na tym konkretnym węźle. Ogranicza się do atrybutów <body>, nie
+          wycisza prawdziwych niezgodności hydratacji w dzieciach poniżej. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
