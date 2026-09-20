@@ -47,10 +47,10 @@ Wzorzec do naśladowania w każdym kroku: `about` (app analogiczna do `blog`, si
 - [x] backend-agent: w `services.py` — `create_draft_post_from_generated_content(generated: GeneratedPostContent, *, author: "AbstractUser") -> Post`: w `transaction.atomic()` — `Post(author=author)` → `full_clean()` → `save()`, potem `PostTranslation(master=post, language_code=Language.PL, status=PostStatus.DRAFT, title=generated.title, excerpt=generated.excerpt, content=generated.content, meta_title=generated.meta_title, meta_description=generated.meta_description, cover_image_alt=generated.cover_image_alt)` → `full_clean()` → `save()` (slug dogeneruje się sam w `PostTranslation.save()`, `cover_image` zostaje puste — obrazek wgrywa człowiek, zgodnie z decyzją). `except django.core.exceptions.ValidationError as exc: raise PostGenerationError("Wygenerowana treść nie przeszła walidacji (np. za długi tytuł lub opis SEO). Żaden post nie został utworzony — zmień temat i spróbuj ponownie.") from exc` — `transaction.atomic()` gwarantuje, że `Post` nie zostaje w bazie osierocony bez tłumaczenia.
 
 ### 4. Formularz i panel admina
-- [ ] backend-agent: `ai_content/forms.py` — `PostGenerationForm(forms.Form)` (zwykły `Form`, nie `ModelForm` — nie ma modelu do wypełnienia): `topic = forms.CharField(label="Temat posta", max_length=200)`, `local_focus = forms.CharField(label="Fokus lokalny", max_length=200, initial="Wrocław, Polska")`. Komunikaty błędów po polsku wprost na polach (`error_messages=...`), styl jak `about.forms.AboutMeAdminForm`.
-- [ ] backend-agent: `ai_content/admin.py` — `AIProviderSettingsAdmin(admin.ModelAdmin)` rejestrowany na `AIProviderSettings`: `fields = ("provider", "model_name", "temperature", "max_output_tokens")`; `has_add_permission` i `changelist_view` skopiowane 1:1 z `about.admin.AboutMeAdmin` (redirect do edycji/dodania singletona, sprawdzenie `has_view_or_change_permission` **przed** przekierowaniem — ten sam powód: uniknięcie wycieku PK przez 302 dla staff bez uprawnień).
-- [ ] backend-agent: w `admin.py` — `PostGeneratorAdmin(admin.ModelAdmin)` rejestrowany na `PostGenerator`: `has_module_permission`/`has_view_permission` → `request.user.has_perm("blog.add_post")` (uprawnienie już istniejące na `Post`, bez nowych permission na `ai_content`); `has_add_permission`/`has_change_permission`/`has_delete_permission` → zawsze `False` (jedyna droga zapisu to `changelist_view` niżej, nie generyczny CRUD admina). `changelist_view` override: brak uprawnień → `return super().changelist_view(request, extra_context)` (ten sam wzorzec 403 co `AboutMeAdmin`); GET → renderuje pusty `PostGenerationForm()`; POST → `form = PostGenerationForm(request.POST)`, jeśli nieważny — renderuj ponownie z błędami; jeśli ważny — `AIProviderSettings.objects.first()`; `None` → `messages.error(request, "Najpierw skonfiguruj dostawcę AI w zakładce „Ustawienia AI”.")` + formularz ponownie; w przeciwnym razie `try: generated = generate_post_content(...); post = create_draft_post_from_generated_content(generated, author=request.user) except PostGenerationError as exc: messages.error(request, str(exc))` + formularz ponownie (wpisany `topic`/`local_focus` zostaje, bo formularz budowany z `request.POST`); sukces → `messages.success(request, format_html('Post „{}” utworzony jako szkic. <a href="{}">Edytuj</a>. Uzasadnienie SEO: {}', generated.title, reverse("admin:blog_post_change", args=[post.pk]), generated.seo_rationale))` + `HttpResponseRedirect` na ten sam URL.
-- [ ] backend-agent: `ai_content/templates/admin/ai_content/postgenerator/changelist.html` — rozszerza `admin/base_site.html`, prosty formularz (`{% csrf_token %}`, `{{ form.as_p }}`, przycisk submit w standardowej klasie `.submit-row`), bez własnego CSS — panel admina obsługuje osoba nietechniczna, ma wyglądać jak reszta Django Admin (`content-admin.md`).
+- [x] backend-agent: `ai_content/forms.py` — `PostGenerationForm(forms.Form)` (zwykły `Form`, nie `ModelForm` — nie ma modelu do wypełnienia): `topic = forms.CharField(label="Temat posta", max_length=200)`, `local_focus = forms.CharField(label="Fokus lokalny", max_length=200, initial="Wrocław, Polska")`. Komunikaty błędów po polsku wprost na polach (`error_messages=...`), styl jak `about.forms.AboutMeAdminForm`.
+- [x] backend-agent: `ai_content/admin.py` — `AIProviderSettingsAdmin(admin.ModelAdmin)` rejestrowany na `AIProviderSettings`: `fields = ("provider", "model_name", "temperature", "max_output_tokens")`; `has_add_permission` i `changelist_view` skopiowane 1:1 z `about.admin.AboutMeAdmin` (redirect do edycji/dodania singletona, sprawdzenie `has_view_or_change_permission` **przed** przekierowaniem — ten sam powód: uniknięcie wycieku PK przez 302 dla staff bez uprawnień).
+- [x] backend-agent: w `admin.py` — `PostGeneratorAdmin(admin.ModelAdmin)` rejestrowany na `PostGenerator`: `has_module_permission`/`has_view_permission` → `request.user.has_perm("blog.add_post")` (uprawnienie już istniejące na `Post`, bez nowych permission na `ai_content`); `has_add_permission`/`has_change_permission`/`has_delete_permission` → zawsze `False` (jedyna droga zapisu to `changelist_view` niżej, nie generyczny CRUD admina). `changelist_view` override: brak uprawnień → `return super().changelist_view(request, extra_context)` (ten sam wzorzec 403 co `AboutMeAdmin`); GET → renderuje pusty `PostGenerationForm()`; POST → `form = PostGenerationForm(request.POST)`, jeśli nieważny — renderuj ponownie z błędami; jeśli ważny — `AIProviderSettings.objects.first()`; `None` → `messages.error(request, "Najpierw skonfiguruj dostawcę AI w zakładce „Ustawienia AI”.")` + formularz ponownie; w przeciwnym razie `try: generated = generate_post_content(...); post = create_draft_post_from_generated_content(generated, author=request.user) except PostGenerationError as exc: messages.error(request, str(exc))` + formularz ponownie (wpisany `topic`/`local_focus` zostaje, bo formularz budowany z `request.POST`); sukces → `messages.success(request, format_html('Post „{}” utworzony jako szkic. <a href="{}">Edytuj</a>. Uzasadnienie SEO: {}', generated.title, reverse("admin:blog_post_change", args=[post.pk]), generated.seo_rationale))` + `HttpResponseRedirect` na ten sam URL.
+- [x] backend-agent: `ai_content/templates/admin/ai_content/postgenerator/changelist.html` — rozszerza `admin/base_site.html`, prosty formularz (`{% csrf_token %}`, `{{ form.as_p }}`, przycisk submit w standardowej klasie `.submit-row`), bez własnego CSS — panel admina obsługuje osoba nietechniczna, ma wyglądać jak reszta Django Admin (`content-admin.md`).
 
 ### 5. Testy (qa-agent)
 - [ ] qa-agent: `ai_content/tests/__init__.py`, `ai_content/tests/conftest.py` — fixture `ai_provider_settings` (tworzy `AIProviderSettings` z sensownymi wartościami domyślnymi, np. `provider=AIProvider.ANTHROPIC, model_name="claude-test"`), fixture `mock_generated_content` (gotowy `GeneratedPostContent` do wstrzyknięcia w zamockowany serwis), fixtures uprawnień wzorem `about/tests/test_admin.py` (`django_user_model.objects.create_user(..., is_staff=True)` + `user_permissions.add(Permission.objects.get(content_type__app_label="blog", codename="add_post"))`).
@@ -106,3 +106,45 @@ nigdy nie koliduje z innym wierszem. Zweryfikowane: `ruff check .` czyste
 `docker compose exec backend python manage.py shell` — `create_draft_post_from_generated_content`
 tworzy `Post`+`PostTranslation(pl, draft)` bez wyjątku, dane testowe usunięte
 po teście.
+
+### Sekcja 4 zrealizowana (2026-09-20)
+`backend-agent` dostarczył `ai_content/forms.py` (`PostGenerationForm`),
+`ai_content/admin.py` (`AIProviderSettingsAdmin`, `PostGeneratorAdmin`) i
+`ai_content/templates/admin/ai_content/postgenerator/changelist.html`,
+commit `c9a132f`. `AIProviderSettingsAdmin` — kopia wzorca
+`about.admin.AboutMeAdmin` (`has_add_permission` + `changelist_view` z
+kontrolą uprawnień przed przekierowaniem). `PostGeneratorAdmin` blokuje
+generyczny CRUD (`has_add/change/delete_permission` → `False`), dostęp
+wymaga `blog.add_post`, a `changelist_view` obsługuje GET (pusty formularz)
+i POST (walidacja → brak `AIProviderSettings` → `messages.error`; sukces →
+`create_draft_post_from_generated_content` + redirect na
+`admin:blog_post_change` z `messages.success` zawierającym link i
+`seo_rationale`; `PostGenerationError` → `messages.error(str(exc))`, temat
+zostaje w formularzu bo budowany z `request.POST`).
+
+Rozstrzygnięcie własne: `request.user` w widoku admina jest typowany przez
+django-stubs jako `AbstractBaseUser | AnonymousUser`, więc wywołanie
+`create_draft_post_from_generated_content(..., author=request.user)`
+(oczekuje `AbstractUser`) nie przechodziło `mypy`. Dodany
+`assert isinstance(request.user, AbstractUser)` tuż przed wywołaniem, z
+komentarzem że `has_view_or_change_permission` wyżej już gwarantuje
+zalogowanego staff — nie zmienia zachowania w runtime, tylko domyka typy.
+
+Zweryfikowane: `ruff check .` czyste, `mypy src` — 110 plików bez błędów
+(uruchomione z `DEBUG=True SECRET_KEY=...` w env, bo `.env` nie istnieje w
+tym środowisku — `manage.py check` tak samo, bez zastrzeżeń;
+`makemigrations --check --dry-run` — „No changes detected" (baza lokalna
+niedostępna spoza kontenera, ostrzeżenie nieistotne dla wyniku). Smoke-test
+przez `docker compose exec backend python manage.py shell` z `django.test.Client`
+(po `migrate ai_content` w kontenerze deweloperskim, który jeszcze nie miał
+tej migracji zaaplikowanej): `/panel-redakcyjny/ai_content/aiprovidersettings/`
+→ `302` na `.../add/` bez singletona; `/panel-redakcyjny/ai_content/postgenerator/`
+→ `200` z formularzem (`id_topic` obecne) dla stafa z `blog.add_post`, `403`
+bez tego uprawnienia (obie zakładki); POST bez skonfigurowanego
+`AIProviderSettings` → `200`, komunikat „Najpierw skonfiguruj dostawcę AI…”
+w treści, `0` nowych postów; POST z zamockowanym `ai_content.admin.generate_post_content`
+(sukces) → `302` na `admin:blog_post_change`, nowy `Post`+`PostTranslation(pl, draft)`
+ze slugiem wygenerowanym automatycznie; POST z zamockowanym wyjątkiem
+`PostGenerationError` → `200`, komunikat błędu w treści, wpisany temat
+zachowany w polu formularza, `0` nowych postów. Wszystkie dane testowe
+usunięte po smoke-teście.
