@@ -67,3 +67,18 @@ certyfikatach (inny mechanizm — brak przetwarzania obrazu, nie CSS).
 **Kontekst:** zdiagnozowane podczas sesji naprawy przycinania obrazów
 (`docs/tasks/13-utrata-okladki-w-panelu.md`), ale nieściągnięte do tego
 taska. Historia decyzji o kształcie favicony: `docs/tasks/11-branding-header.md`.
+
+## [otwarte] Rozważyć RAG dla generatora postów AI — kontekst z istniejących postów (2026-09-20)
+Przy okazji taska 12 (generator postów AI) padł pomysł, żeby generowanie
+korzystało z bazy wiedzy (np. dotychczasowych postów bloga) przez
+retrieval-augmented generation — wyszukiwanie pasujących fragmentów w
+momencie generowania i doklejanie ich do promptu. To osobny, duży temat:
+wymaga bazy wektorowej, pipeline'u do embeddingów i osobnej infrastruktury,
+nie jest tym samym co konfigurowalny system prompt (`AIProviderSettings`
+dostał zamiast tego proste, edytowalne pole „Dodatkowe instrukcje dla AI” —
+patrz `docs/tasks/12-generator-postow-ai.md`). Świadomie nieplanowane w
+tasku 12 — YAGNI (`engineering-principles.md`), decyzja wejściowa #10 tego
+taska już wyklucza „kontekst z istniejących postów” z zakresu.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, rozmowa przy sekcji 6
+(dodanie pola „Dodatkowe instrukcje dla AI” do `AIProviderSettings`).
