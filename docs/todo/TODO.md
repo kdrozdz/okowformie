@@ -82,3 +82,22 @@ taska już wyklucza „kontekst z istniejących postów” z zakresu.
 
 **Kontekst:** `docs/tasks/12-generator-postow-ai.md`, rozmowa przy sekcji 6
 (dodanie pola „Dodatkowe instrukcje dla AI” do `AIProviderSettings`).
+
+## [otwarte] Wersjonowanie system promptów generatora AI (2026-09-20)
+Padł pomysł, żeby wersjonować konfigurację/prompt generatora postów AI
+(`AIProviderSettings`, w tym pole `extra_instructions`) — np. żeby wiedzieć,
+z jaką dokładnie wersją promptu powstał dany post, albo móc wrócić do
+poprzedniej wersji instrukcji. Częściowo to już działa za darmo: Django
+Admin loguje każdą zmianę zapisaną przez panel (`django.contrib.admin.models.LogEntry`,
+link „Historia” na formularzu edycji) — kto, kiedy, które pole zmienił w
+„Ustawieniach AI”. Czego to nie daje: powiązania konkretnego wygenerowanego
+posta z dokładną wersją promptu, która go stworzyła — `Post`/`PostTranslation`
+świadomie nie mają żadnych pól o AI (decyzja #8 w `docs/tasks/12-generator-postow-ai.md`,
+celowo, żeby blog zostawał czysty niezależnie od tego, czy generator kiedyś
+zniknie). Świadomie nierozwinięte teraz — funkcja jeszcze nieużywana, brak
+realnej potrzeby do zweryfikowania. Do decyzji przy rewizji: albo zbudować
+(osobny log w `ai_content` linkujący do posta, bez zmiany schematu `blog`),
+albo świadomie odrzucić ten pomysł.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, rozmowa po sekcji 5a
+(edytowalne instrukcje dla AI).
