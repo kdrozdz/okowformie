@@ -69,7 +69,7 @@ Poza pierwotnymi „Decyzjami wejściowymi” — padło w rozmowie po sekcji 5:
 ### 6. Dokumentacja i domknięcie
 - [x] backend-agent: `docs/decisions/2026-09-20-generator-postow-ai.md` — nowy plik formalizujący architekturę (nowa aplikacja `ai_content`, singleton `AIProviderSettings`, `init_chat_model` + `with_structured_output`, klucze wyłącznie w zmiennych środowiskowych, proxy-model do UI w adminie, generacja tylko PL), wzorem `docs/decisions/2026-09-19-model-about-me.md` dla taska 9 — to, co dziś żyje tylko w sekcji „Decyzje wejściowe” wyżej. Commit `073f318`, zawiera też `extra_instructions` (sekcja 5a) i wymóg `blog.add_post`+`blog.change_post` (poprawka z sekcji 5).
 - [x] backend-agent: `CLAUDE.md` — przenieść „Sekrety bez AWS” z „Otwarte decyzje” do „Rozstrzygnięte”, z odnośnikiem do nowego pliku decyzji (rozstrzygnięte: zmienne środowiskowe czytane bezpośrednio przez biblioteki, bez Vault/AWS Secrets Manager). Ten sam commit `073f318`.
-- [ ] `/check` (ruff, mypy, `pytest`, `manage.py check`, `makemigrations --dry-run`) — zielone.
+- [x] `/check` (ruff, mypy, `pytest`, `manage.py check`, `makemigrations --dry-run`) — zielone (backend: `ruff`/`mypy`/`manage.py check`/`makemigrations --dry-run` czyste, `pytest -q` — 243 passed; frontend bez zmian w tym tasku, sprawdzony dla pewności: `lint`/`typecheck` czyste, `npm test` pominięte — brak skryptu).
 - [ ] qa-agent: niezależne review całości (regresje w `blog`, bezpieczeństwo kluczy/sanityzacji, brak wycieku draftów, zgodność z `.claude/rules/`).
 - [ ] backend-agent: naprawa znalezisk z review qa-agent.
 - [ ] `/code-review` (poziom medium) i naprawa znalezisk.
