@@ -7,6 +7,7 @@ exports[`CertificatesSlider > dopasowuje snapshot w domyślnym, zamkniętym stan
   <button
     aria-label="Przewiń w lewo"
     class="_arrow_9c5073 _arrowPrev_9c5073"
+    disabled=""
     type="button"
   >
     <svg
@@ -107,6 +108,7 @@ exports[`CertificatesSlider > dopasowuje snapshot w domyślnym, zamkniętym stan
   <button
     aria-label="Przewiń w prawo"
     class="_arrow_9c5073 _arrowNext_9c5073"
+    disabled=""
     type="button"
   >
     <svg

@@ -24,6 +24,19 @@
   background: var(--bg);
 }
 
+.arrow:disabled {
+  color: var(--ink-muted);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: none;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.arrow:disabled:hover {
+  background: var(--surface);
+}
+
 .arrow svg {
   width: 16px;
   height: 16px;

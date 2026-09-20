@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { Certificate } from "@/lib/api/types";
 import type { Dictionary } from "@/lib/i18n/dictionary";
@@ -30,6 +30,34 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
   const { lightboxIndex, isOpen, open, close, showNext, showPrev } = useCertificatesLightbox(
     certificates.length,
   );
+
+  // Krańce przewijania — strzałka ma być wyszarzona i nieklikalna, gdy nie
+  // ma już dokąd przewinąć w tym kierunku (zgłoszenie z live-testowania:
+  // strzałka bez zmiany wyglądu na końcu listy sugerowała, że wciąż da się
+  // kliknąć). Margines 1px pod zaokrąglenia subpikselowe scrolla.
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  function updateScrollState() {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    const maxScrollLeft = slider.scrollWidth - slider.clientWidth;
+    setCanScrollPrev(slider.scrollLeft > 1);
+    setCanScrollNext(slider.scrollLeft < maxScrollLeft - 1);
+  }
+
+  useEffect(() => {
+    updateScrollState();
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    slider.addEventListener("scroll", updateScrollState);
+    window.addEventListener("resize", updateScrollState);
+    return () => {
+      slider.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [certificates.length]);
 
   function scrollByDirection(direction: 1 | -1) {
     const slider = sliderRef.current;
@@ -62,6 +90,7 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
         className={`${styles.arrow} ${styles.arrowPrev}`}
         aria-label={dict.prevAriaLabel}
         onClick={() => scrollByDirection(-1)}
+        disabled={!canScrollPrev}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
           <path d="M15 5l-7 7 7 7" />
@@ -97,6 +126,7 @@ export function CertificatesSlider({ certificates, dict }: CertificatesSliderPro
         className={`${styles.arrow} ${styles.arrowNext}`}
         aria-label={dict.nextAriaLabel}
         onClick={() => scrollByDirection(1)}
+        disabled={!canScrollNext}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
           <path d="M9 5l7 7-7 7" />
