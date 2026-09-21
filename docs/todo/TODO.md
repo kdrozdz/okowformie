@@ -117,3 +117,20 @@ manualny test z celowo błędnym kluczem przed pierwszym produkcyjnym użyciem.
 
 **Kontekst:** `docs/tasks/12-generator-postow-ai.md`, niezależne review
 `qa-agent` (sekcja 6, Defekt #2, informational/low).
+
+## [otwarte] Synchroniczne wywołanie LLM w generatorze postów może blokować worker gunicorna produkcyjnego (2026-09-21)
+`ai_content/services.py::generate_post_content` woła LLM synchronicznie
+(do 60s timeout) wewnątrz widoku admina — świadoma decyzja #7 w
+`docs/tasks/12-generator-postow-ai.md` (bez Celery/kolejki, YAGNI, jedna
+osoba, okazjonalne użycie). `backend/Dockerfile` uruchamia produkcyjnie
+`gunicorn --workers 3` — ten sam pool workerów obsługuje panel admina i
+publiczny blog/API. Jedno kliknięcie „Wygeneruj” może zająć worker na do
+60s; przy 3 workerach to ok. 1/3 całej pojemności serwowania, więc
+odwiedzający stronę w tym oknie czasowym ma realną szansę na podwyższone
+opóźnienie albo timeout. Znalezisko z `/code-review medium` — nie
+naprawiane teraz (fix wymagałby kolejki/async, czyli cofnięcia świadomej
+decyzji #7), ale warto to sprawdzić, jeśli funkcja zacznie być używana
+częściej niż okazjonalnie, albo przy skalowaniu liczby workerów.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, `/code-review medium`
+na branchu `12-generator-postow-ai`, `backend/Dockerfile` (`--workers 3`).
