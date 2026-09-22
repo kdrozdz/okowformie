@@ -1,7 +1,7 @@
 # 12 — Generator postów przez AI (LangChain)
 
 - **Cel:** Zakładka „Post with AI” w Django Admin — redaktor wpisuje temat, LangChain (Anthropic/OpenAI/Grok, wybierane w zakładce „AI model”) generuje treść ze structured output (Pydantic), backend tworzy z tego `Post` (draft, PL) i pokazuje link + uzasadnienie SEO.
-- **Status:** plan implementacji gotowy (niżej). Branch `12-generator-postow-ai` utworzony z `dev`. Zero kodu, zero migracji — implementacja jeszcze nie rozpoczęta.
+- **Status:** gotowe — implementacja, testy, dokumentacja, `/check`, niezależne review `qa-agent` i `/code-review` zakończone, wszystkie naprawialne znaleziska naprawione. Nic nie jest jeszcze zmergowane do `dev` — czeka na świadomą decyzję o mergu.
 
 ## Decyzje wejściowe
 
@@ -72,8 +72,8 @@ Poza pierwotnymi „Decyzjami wejściowymi” — padło w rozmowie po sekcji 5:
 - [x] `/check` (ruff, mypy, `pytest`, `manage.py check`, `makemigrations --dry-run`) — zielone (backend: `ruff`/`mypy`/`manage.py check`/`makemigrations --dry-run` czyste, `pytest -q` — 243 passed; frontend bez zmian w tym tasku, sprawdzony dla pewności: `lint`/`typecheck` czyste, `npm test` pominięte — brak skryptu).
 - [x] qa-agent: niezależne review całości (regresje w `blog`, bezpieczeństwo kluczy/sanityzacji, brak wycieku draftów, zgodność z `.claude/rules/`). Werdykt: **GO z zastrzeżeniem** (patrz „Decyzje po drodze” niżej). Dopisano 14 testów (luki w pokryciu: `PostGenerationForm`, walidatory `temperature`/`max_output_tokens`, sanityzacja XSS na realnym zapisie), commit `904e1c6` — 24→38 testów `ai_content`, 243→257 w całym backendzie.
 - [x] backend-agent: naprawa znalezisk z review qa-agent. Defekt #1 (Medium — `PostGeneratorAdmin.has_view_permission` udostępniał odczyt konfiguracji AI przez `change_view` z pominięciem dedykowanych uprawnień `ai_content.*`) naprawiony, commit `6baba19`, z testem regresyjnym — 258 testów w całym backendzie. Defekt #2 (Informational/Low — rezydualne ryzyko wycieku klucza API w logu SDK dostawcy) świadomie nienaprawiany teraz, zanotowany w `docs/todo/TODO.md`.
-- [ ] `/code-review` (poziom medium) i naprawa znalezisk.
-- [ ] Aktualizacja tego pliku — odhaczona checklista, `Status: gotowe`, wynik `/check`/review/`/code-review` udokumentowany w sekcji „Decyzje po drodze” (wzorem `docs/tasks/9-strona-o-mnie.md`).
+- [x] `/code-review` (poziom medium; dwie próby na `max` zawiodły — najpierw limit sesji, potem dwukrotne zawieszenie agenta, patrz „Decyzje po drodze") i naprawa znalezisk — wszystkie 4 naprawialne defekty naprawione, 1 świadomie odłożony w `docs/todo/TODO.md`. Zielone: `pytest -q` — **263 passed**, `ruff`/`mypy` czyste.
+- [x] Aktualizacja tego pliku — odhaczona checklista, `Status: gotowe`, wynik `/check`/review/`/code-review` udokumentowany w sekcji „Decyzje po drodze” (wzorem `docs/tasks/9-strona-o-mnie.md`).
 - [ ] Merge do `dev` dopiero po zamknięciu review — osobna, świadoma decyzja użytkownika (`Workflow Git` w `CLAUDE.md`), nie automatyczny krok tego planu.
 
 ## Poza zakresem tego taska
@@ -218,3 +218,65 @@ przez `logger.exception`. Świadomie nienaprawiany teraz — zanotowany w
 `docs/todo/TODO.md`.
 
 Po naprawie: `pytest -q` — **258 passed**, `ruff`/`mypy` czyste (117 plików).
+
+### Dev server pokazywał panel bez nowych zakładek — diagnoza (2026-09-21)
+Użytkownik zgłosił, że w Django Admin nie widać „Generator treści AI”.
+Przyczyna: proces `runserver` w kontenerze `backend` wystartował dokładnie
+w momencie, gdy `"ai_content"` trafiło do `INSTALLED_APPS` (pierwszy commit
+sekcji 1), **zanim** powstały `models.py`/`admin.py` i reszta aplikacji.
+Django `StatReloader` obserwuje tylko pliki już zaimportowane przez
+działający proces — pliki utworzone *po* starcie procesu (bo jeszcze nie
+istniały w chwili jego importu aplikacji) nigdy nie trafiły do listy
+obserwowanych, więc ich późniejsze powstanie/edycja nie wywoływały restartu.
+Proces serwował „zamrożony” stan sprzed 12+ godzin, mimo że każdy świeży
+`manage.py shell`/`exec` (nowy proces Pythona) widział kod poprawnie — stąd
+rozjazd między tym, co potwierdzały moje własne weryfikacje, a tym, co
+widział użytkownik w przeglądarce. Naprawa: `docker compose restart backend`
+— po restarcie panel pokazuje obie zakładki poprawnie. Wniosek na przyszłość:
+gdy nowa aplikacja Django dostaje kolejne pliki *po* pierwszym dopisaniu do
+`INSTALLED_APPS` w trakcie tej samej sesji dev servera, warto ręcznie
+zrestartować kontener zamiast ufać autoreloadowi.
+
+### `/code-review` — dwie nieudane próby na `max`, sukces na `medium` (2026-09-21/22)
+Pierwsza próba `/code-review max` padła w trakcie na tygodniowy limit API
+(reset zgłoszony na 22.09 19:00 czasu warszawskiego), druga i trzecia —
+na zawieszenie agenta (`stream watchdog did not recover`, 600s bez
+postępu) — najwyraźniej `max` (10 równoległych „kątów” analizy) jest w tej
+chwili niestabilny w tym środowisku. Zejście na `medium` zadziałało od razu
+i zwróciło 5 realnych znalezisk:
+
+1. **(Reliability, odłożone)** Synchroniczne wywołanie LLM w widoku admina
+   może zająć worker gunicorna (produkcyjnie tylko 3) na do 60s — świadomy
+   kompromis z decyzji #7 (bez kolejki, YAGNI), nienaprawiane teraz,
+   zanotowane w `docs/todo/TODO.md`.
+2. **(Correctness)** `PostGenerator` (proxy) tworzył nieużywane uprawnienia
+   `add/change/delete/view_postgenerator` — nigdy niesprawdzane przez
+   `PostGeneratorAdmin` (realny dostęp to `blog.add_post`+`blog.change_post`),
+   mylące dla kogoś zarządzającego dostępem przez panel Użytkownicy/Grupy.
+   Naprawione: `default_permissions = ()` na `PostGenerator.Meta`, migracja
+   `0003_alter_postgenerator_options_and_more.py`.
+3. **(Correctness)** Walidator `temperature` dopuszczał 0–2 dla wszystkich
+   providerów, ale Anthropic (domyślny) odrzuca >1 na poziomie API — błąd
+   wychodził dopiero przy wywołaniu LLM, z generycznym komunikatem
+   niewspominającym o temperaturze. Naprawione: `AIProviderSettings.clean()`
+   waliduje krzyżowo `provider`+`temperature` z konkretnym polskim
+   komunikatem; `help_text` pola zaktualizowany.
+4. **(Reliability)** Cały prompt szedł jako jeden `HumanMessage` zamiast
+   `SystemMessage` (persona/zasady/limity) + `HumanMessage` (temat/fokus) —
+   część providerów trzyma się instrukcji z `SystemMessage` ściślej.
+   Naprawione: `_build_system_prompt`/`_build_user_prompt` rozdzielone,
+   `generate_post_content` woła `invoke([SystemMessage(...), HumanMessage(...)])`.
+5. **(Maintainability)** Limity długości pól (`title`, `excerpt`,
+   `meta_title`, `meta_description`, `cover_image_alt`) przepisane ręcznie w
+   trzech miejscach (`blog.models`/`core.constants`, `schemas.py`, tekst
+   promptu) — ryzyko cichego rozjazdu przy zmianie limitu w `blog`/`core`.
+   Naprawione: `schemas.py` importuje `META_TITLE_MAX_LENGTH`/
+   `META_DESCRIPTION_MAX_LENGTH` z `core.constants` i odczytuje
+   `title`/`excerpt`/`cover_image_alt` raz przy imporcie przez
+   `PostTranslation._meta.get_field(...).max_length` (wzorem istniejącego
+   `PostTranslation.generate_slug()`); prompt cytuje te same stałe.
+
+Naprawy #2–#5: commity `8741ee2` (defekty #2/#3, plik `models.py`) i
+`39d5a2e` (defekty #4/#5, pliki `schemas.py`/`services.py`), z aktualizacją
+testów. Zweryfikowane niezależnie: `pytest -q` — **263 passed**, `ruff`/`mypy`
+czyste (118 plików).
