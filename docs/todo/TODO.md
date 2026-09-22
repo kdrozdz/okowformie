@@ -67,3 +67,70 @@ certyfikatach (inny mechanizm — brak przetwarzania obrazu, nie CSS).
 **Kontekst:** zdiagnozowane podczas sesji naprawy przycinania obrazów
 (`docs/tasks/13-utrata-okladki-w-panelu.md`), ale nieściągnięte do tego
 taska. Historia decyzji o kształcie favicony: `docs/tasks/11-branding-header.md`.
+
+## [otwarte] Rozważyć RAG dla generatora postów AI — kontekst z istniejących postów (2026-09-20)
+Przy okazji taska 12 (generator postów AI) padł pomysł, żeby generowanie
+korzystało z bazy wiedzy (np. dotychczasowych postów bloga) przez
+retrieval-augmented generation — wyszukiwanie pasujących fragmentów w
+momencie generowania i doklejanie ich do promptu. To osobny, duży temat:
+wymaga bazy wektorowej, pipeline'u do embeddingów i osobnej infrastruktury,
+nie jest tym samym co konfigurowalny system prompt (`AIProviderSettings`
+dostał zamiast tego proste, edytowalne pole „Dodatkowe instrukcje dla AI” —
+patrz `docs/tasks/12-generator-postow-ai.md`). Świadomie nieplanowane w
+tasku 12 — YAGNI (`engineering-principles.md`), decyzja wejściowa #10 tego
+taska już wyklucza „kontekst z istniejących postów” z zakresu.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, rozmowa przy sekcji 6
+(dodanie pola „Dodatkowe instrukcje dla AI” do `AIProviderSettings`).
+
+## [otwarte] Wersjonowanie system promptów generatora AI (2026-09-20)
+Padł pomysł, żeby wersjonować konfigurację/prompt generatora postów AI
+(`AIProviderSettings`, w tym pole `extra_instructions`) — np. żeby wiedzieć,
+z jaką dokładnie wersją promptu powstał dany post, albo móc wrócić do
+poprzedniej wersji instrukcji. Częściowo to już działa za darmo: Django
+Admin loguje każdą zmianę zapisaną przez panel (`django.contrib.admin.models.LogEntry`,
+link „Historia” na formularzu edycji) — kto, kiedy, które pole zmienił w
+„Ustawieniach AI”. Czego to nie daje: powiązania konkretnego wygenerowanego
+posta z dokładną wersją promptu, która go stworzyła — `Post`/`PostTranslation`
+świadomie nie mają żadnych pól o AI (decyzja #8 w `docs/tasks/12-generator-postow-ai.md`,
+celowo, żeby blog zostawał czysty niezależnie od tego, czy generator kiedyś
+zniknie). Świadomie nierozwinięte teraz — funkcja jeszcze nieużywana, brak
+realnej potrzeby do zweryfikowania. Do decyzji przy rewizji: albo zbudować
+(osobny log w `ai_content` linkujący do posta, bez zmiany schematu `blog`),
+albo świadomie odrzucić ten pomysł.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, rozmowa po sekcji 5a
+(edytowalne instrukcje dla AI).
+
+## [otwarte] Rezydualne ryzyko: SDK dostawcy AI mógłby wpisać fragment klucza API do treści wyjątku (2026-09-20)
+`ai_content/services.py::generate_post_content` łapie `Exception` szeroko i
+loguje pełny traceback przez `logger.exception(...)` (do logu serwera, nigdy
+do usera — to działa poprawnie, zweryfikowane testem). Teoretyczne,
+niezweryfikowane ryzyko: gdyby SDK dostawcy (`langchain-anthropic`/
+`langchain-openai`/`langchain-xai`) kiedyś zwrócił błąd uwierzytelnienia z
+fragmentem klucza w treści wyjątku (np. echo nagłówka `Authorization`), ten
+fragment wylądowałby w logu serwera. Nie znaleziono takiego zachowania w
+kodzie `ai_content` — źródłem musiałaby być biblioteka trzecia, czego nie da
+się zweryfikować bez realnego wywołania z błędnym kluczem. Do rozważenia:
+log-scrubbing filter na loggerze `ai_content.services`, albo jednorazowy
+manualny test z celowo błędnym kluczem przed pierwszym produkcyjnym użyciem.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, niezależne review
+`qa-agent` (sekcja 6, Defekt #2, informational/low).
+
+## [otwarte] Synchroniczne wywołanie LLM w generatorze postów może blokować worker gunicorna produkcyjnego (2026-09-21)
+`ai_content/services.py::generate_post_content` woła LLM synchronicznie
+(do 60s timeout) wewnątrz widoku admina — świadoma decyzja #7 w
+`docs/tasks/12-generator-postow-ai.md` (bez Celery/kolejki, YAGNI, jedna
+osoba, okazjonalne użycie). `backend/Dockerfile` uruchamia produkcyjnie
+`gunicorn --workers 3` — ten sam pool workerów obsługuje panel admina i
+publiczny blog/API. Jedno kliknięcie „Wygeneruj” może zająć worker na do
+60s; przy 3 workerach to ok. 1/3 całej pojemności serwowania, więc
+odwiedzający stronę w tym oknie czasowym ma realną szansę na podwyższone
+opóźnienie albo timeout. Znalezisko z `/code-review medium` — nie
+naprawiane teraz (fix wymagałby kolejki/async, czyli cofnięcia świadomej
+decyzji #7), ale warto to sprawdzić, jeśli funkcja zacznie być używana
+częściej niż okazjonalnie, albo przy skalowaniu liczby workerów.
+
+**Kontekst:** `docs/tasks/12-generator-postow-ai.md`, `/code-review medium`
+na branchu `12-generator-postow-ai`, `backend/Dockerfile` (`--workers 3`).
