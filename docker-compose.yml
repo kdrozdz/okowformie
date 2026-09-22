@@ -94,6 +94,11 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       REDIS_URL: redis://cache:6379/0
+      # Metryki OpenTelemetry/Prometheus (`core/telemetry.py`) — wyłączone
+      # domyślnie w kodzie (`settings.py`), żeby jednorazowe komendy
+      # `manage.py` nie próbowały bindować portu 9464; tutaj jawnie włączone
+      # dla usługi `backend` w compose, gdzie `prometheus` faktycznie scrape'uje.
+      OTEL_METRICS_ENABLED: ${OTEL_METRICS_ENABLED:-True}
     volumes:
       - ./backend:/app
       # Wolumen na .venv: chroni venv zbudowany w kontenerze (Linux, binarki
@@ -102,6 +107,11 @@ services:
       - backend-venv:/app/.venv
     ports:
       - "8000:8000"
+    expose:
+      # Endpoint metryk Prometheusa (`prometheus_client.start_http_server`,
+      # `core/telemetry.py`) — scrape'owany tylko wewnątrz sieci compose przez
+      # `prometheus`, bez publikacji na hosta (wzorem `db`/`cache`).
+      - "9464"
     depends_on:
       db:
         condition: service_healthy
@@ -148,6 +158,11 @@ services:
       - frontend-next-cache-v2:/app/.next
     ports:
       - "3000:3000"
+    expose:
+      # Endpoint metryk Prometheusa (`PrometheusExporter`, `instrumentation.ts`)
+      # — scrape'owany tylko wewnątrz sieci compose przez `prometheus`, bez
+      # publikacji na hosta (wzorem `db`/`cache`/`backend`).
+      - "9464"
     depends_on:
       backend:
         condition: service_healthy
@@ -160,8 +175,66 @@ services:
       retries: 15
       start_period: 30s
 
+  prometheus:
+    # Tag pinowany na najnowszy stabilny release w momencie implementacji
+    # (sprawdzony na Docker Hub, `prom/prometheus` tags — `latest` wskazuje
+    # na ten sam obraz). Bez `:latest`, wzorem `postgres:16-alpine`.
+    image: prom/prometheus:v3.14.0
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      # Obraz `prom/prometheus` jest budowany na busybox — ma `wget`, nie ma
+      # `curl` (zweryfikowane empirycznie: `docker compose exec prometheus sh
+      # -c "which wget || which curl"`).
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  grafana:
+    # Tag pinowany na najnowszy stabilny release w momencie implementacji
+    # (sprawdzony na Docker Hub, `grafana/grafana` tags — `latest` wskazuje na
+    # ten sam obraz). Bez `:latest`, wzorem Prometheusa powyżej.
+    image: grafana/grafana:13.2.2
+    environment:
+      # `admin`/`admin` to prawdziwe, powszechnie zgadywane domyślne hasło
+      # Grafany — default poniżej celowo oczywiście fałszywy (`change-me`),
+      # ten sam wzorzec co `POSTGRES_PASSWORD` w tym pliku, żeby dawał
+      # widoczny sygnał "to trzeba zmienić", gdyby port 3001 kiedyś wyszedł
+      # poza `localhost`.
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me}
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      # `3000` zajęty przez `frontend` — Grafana na hoście pod `3001`.
+      - "3001:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      # Obraz `grafana/grafana` jest budowany na Alpine (busybox `wget`), bez
+      # `curl` (zweryfikowane empirycznie tak samo jak dla `prometheus`).
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
 volumes:
   postgres-data:
   backend-venv:
   frontend-node-modules:
   frontend-next-cache-v2:
+  prometheus-data:
+  grafana-data:

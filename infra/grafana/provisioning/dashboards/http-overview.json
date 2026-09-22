@@ -1,0 +1,112 @@
+{
+  "title": "HTTP overview",
+  "uid": "http-overview",
+  "schemaVersion": 39,
+  "version": 4,
+  "editable": true,
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate",
+      "description": "Requesty/s wg usługi. Backend: `http_server_duration_milliseconds_count` (DjangoInstrumentor, auto-instrumentacja OTel). Frontend: `nextjs_http_requests_total` (ręczny licznik w `instrumentation.ts` — `HttpInstrumentation` OTel okazał się niedeterministyczny pod Next.js/Turbopack, patrz `docs/tasks/14-observability-otel-prometheus.md`).",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job) (rate(http_server_duration_milliseconds_count{job=\"backend\"}[5m]))",
+          "legendFormat": "backend"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (job) (rate(nextjs_http_requests_total{job=\"frontend\"}[5m]))",
+          "legendFormat": "frontend"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error rate (HTTP 4xx/5xx)",
+      "description": "Requesty/s zakończone kodem >=400 wg usługi. Ta sama para metryk co panel \"Request rate\", filtrowana po etykiecie statusu (`http_status_code` na backendzie, `status_code` na frontendzie).",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job) (rate(http_server_duration_milliseconds_count{job=\"backend\", http_status_code=~\"4..|5..\"}[5m]))",
+          "legendFormat": "backend"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (job) (rate(nextjs_http_requests_total{job=\"frontend\", status_code=~\"4..|5..\"}[5m]))",
+          "legendFormat": "frontend"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Latency p50/p95",
+      "description": "Percentyle czasu odpowiedzi (ms) z histogramów `http_server_duration_milliseconds`/`nextjs_http_server_duration_milliseconds`.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_duration_milliseconds_bucket{job=\"backend\"}[5m])))",
+          "legendFormat": "backend p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_duration_milliseconds_bucket{job=\"backend\"}[5m])))",
+          "legendFormat": "backend p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(nextjs_http_server_duration_milliseconds_bucket{job=\"frontend\"}[5m])))",
+          "legendFormat": "frontend p50"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(nextjs_http_server_duration_milliseconds_bucket{job=\"frontend\"}[5m])))",
+          "legendFormat": "frontend p95"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "DB query latency p95 (SQL operation)",
+      "description": "Percentyl 95 czasu trwania zapytań SQL na backendzie, wg operacji (SELECT/INSERT/UPDATE/DELETE/...) — histogram `django_db_query_duration_seconds` (`DBQueryMetricsMiddleware`, `backend/src/core/telemetry.py`).",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (operation, le) (rate(django_db_query_duration_seconds_bucket{job=\"backend\"}[5m])))",
+          "legendFormat": "{{operation}}"
+        }
+      ]
+    }
+  ]
+}
