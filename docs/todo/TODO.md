@@ -2,6 +2,67 @@
 
 Format i statusy: `README.md` w tym folderze.
 
+## [otwarte] Liczenie unikalnych odwiedzających bloga — osobny task, poza OTel/Prometheus (2026-09-22)
+Przy tasku 14 (observability) padło pytanie "ile osób dziś odwiedziło stronę".
+Prometheus/OTel liczy requesty, nie unikalnych użytkowników — etykietowanie
+metryk po IP/sesji powoduje eksplozję kardynalności, Prometheus nie jest do
+tego zaprojektowany. Świadomie odłożone: potrzebne osobne narzędzie web
+analytics (np. self-hosted Umami/Plausible albo GA), inny problem niż infra
+health mierzona w tasku 14. Do zrobienia dopiero na jawne zlecenie.
+
+**Kontekst:** `docs/decisions/2026-09-22-observability-otel-prometheus.md`
+(sekcja Alternatywy), `docs/tasks/14-observability-otel-prometheus.md`.
+
+## [otwarte] `docker compose exec backend python manage.py <cokolwiek>` koliduje z portem metryk, gdy `backend` już działa (2026-09-22)
+`docker-compose.yml` ustawia `OTEL_METRICS_ENABLED: ${OTEL_METRICS_ENABLED:-True}` na poziomie **kontenera** `backend` (zgodnie z planem taska 14, sekcja 4) — dotyczy więc każdego procesu `manage.py` uruchomionego w tym kontenerze, nie tylko głównego `runserver`. Guard `is_runserver_reload_watcher` w `core/telemetry.py` (dodany w tym samym tasku) rozwiązuje kolizję portu 9464 między procesem-rodzicem i dzieckiem autoreloadera `runserver`, ale **nie** chroni przed kolizją, gdy deweloper odpali dodatkową komendę w już działającym kontenerze, np. `docker compose exec backend python manage.py shell` — ten nowy proces też ma `OTEL_METRICS_ENABLED=True`, nie jest `runserver`, więc `setup_telemetry()` próbuje ponownie zbindować port 9464 zajęty już przez główny proces serwera i pada `OSError: Address already in use` (zweryfikowane empirycznie przy weryfikacji end-to-end taska 14). `docker compose exec backend python manage.py migrate`/`createsuperuser`/`test` mają ten sam problem. **Ten sam błąd łapie też `mypy`** — `django-stubs`/`mypy_django_plugin` woła `django.setup()` wewnętrznie przy starcie, więc `docker compose exec backend mypy src` (jedna z komend `/check`) pada identycznym `OSError: Address already in use`, jeśli kontener `backend` już działa (zweryfikowane empirycznie przy weryfikacji end-to-end taska 14 — `mypy src` bez obejścia kończy się `INTERNAL ERROR`, z `-e OTEL_METRICS_ENABLED=False` przechodzi czysto). Obejście na teraz: `docker compose exec -e OTEL_METRICS_ENABLED=False backend python manage.py shell` / `... mypy src` (nadpisanie zmiennej per-exec). Do rozważenia przy rewizji: guard szerszy niż tylko `runserver` (np. `OTEL_METRICS_ENABLED` faktycznie `True` tylko dla procesu nasłuchującego na `0.0.0.0:8000`, nie dla każdej komendy), albo osobna zmienna typu `OTEL_METRICS_STANDALONE_PROCESS` do jawnego wyłączania w jednorazowych execach — powiązane z już opisaną niżej kolizją portu przy gunicornie (ten sam korzeń: `start_http_server()` bez świadomości wielu procesów).
+
+**Kontekst:** `backend/src/core/telemetry.py` (`is_runserver_reload_watcher`), `docker-compose.yml`
+(`OTEL_METRICS_ENABLED` w `environment:` usługi `backend`), `docs/tasks/14-observability-otel-prometheus.md`
+sekcja 5 (weryfikacja end-to-end).
+
+## [zrobione] `PsycopgInstrumentor` nie emitował żadnych metryk Prometheusa — zastąpiony własnym middleware DB (2026-09-22)
+Task 14 (decyzja `docs/decisions/2026-09-22-observability-otel-prometheus.md`) zakładał metryki DB
+(Postgres/psycopg) na backendzie "przez gotowe pakiety auto-instrumentacji OTel" —
+zweryfikowane empirycznie przy weryfikacji end-to-end (sekcja 5), że to **nie działa**:
+`opentelemetry-instrumentation-psycopg` (`_instrument()`, zbadane bezpośrednio w źródle
+zainstalowanego pakietu) integruje się wyłącznie przez `tracer_provider`/`_get_tracer()` — nie ma
+żadnej ścieżki metryk. Task 14 świadomie **nie** konfiguruje `TracerProvider`/eksportera trace'ów
+(decyzja: "błędy jako metryki, nie logi/traces") — więc ta instrumentacja faktycznie nie produkowała
+żadnych obserwowalnych danych: `/metrics` na `backend:9464` nie zawierało ani jednej serii związanej z
+DB, niezależnie od realnego ruchu. `.instrument()` samo w sobie się nie wywalało (brak błędu, kod
+"działał"), więc łatwo to było przeoczyć bez ręcznej weryfikacji zawartości `/metrics`.
+
+**Naprawione** (sekcja 1a planu taska 14): `PsycopgInstrumentor` usunięty (`uv remove
+opentelemetry-instrumentation-psycopg`), zastąpiony własnym middleware
+`core.telemetry.DBQueryMetricsMiddleware` — owija `connection.execute_wrapper` (wbudowany hak Django),
+histogram `django_db_query_duration_seconds` z etykietą `operation`. Zweryfikowane realnym ruchem po
+`docker compose up -d --build backend`: `django_db_query_duration_seconds_count{operation="SELECT"}`
+rośnie z ruchem, `_sum` niezerowy.
+
+**Redis pozostaje poza zakresem — świadoma decyzja, nie znalezisko do naprawy.**
+`RedisInstrumentor` miał ten sam defekt (no-op bez `TracerProvider`) i został usunięty razem z
+psycopg (`uv remove opentelemetry-instrumentation-redis`), ale nie dostał odpowiednika
+`execute_wrapper` — nie było to zlecone, a `redis-py` nie ma analogicznego wbudowanego haka (wymagałoby
+ręcznego owijania klienta). Jeśli metryki cache staną się potrzebne, to osobny, świadomie zlecony task.
+
+**Kontekst:** `backend/src/core/telemetry.py` (`DBQueryMetricsMiddleware`, `_record_db_query`),
+`docs/decisions/2026-09-22-observability-otel-prometheus.md` (punkt "Zestaw metryk"),
+`docs/tasks/14-observability-otel-prometheus.md` sekcja 1a.
+
+## [otwarte] Prometheus + gunicorn multi-worker: kolizja portu metryk w produkcji (2026-09-22)
+Python `opentelemetry-exporter-prometheus` (`PrometheusMetricReader`) nie
+stawia własnego serwera HTTP — wymaga ręcznego `prometheus_client.start_http_server()`
+w procesie. Zaimplementowane w tasku 14 pod `runserver` (dev, jeden proces) —
+działa. `backend/Dockerfile` w produkcji odpala gunicorn z `--workers 3`:
+3 procesy próbujące zbindować ten sam port `9464` się wysypią. Nierozwiązane
+świadomie — task 14 ma scope tylko dev (patrz decyzja). Do podjęcia przy
+tasku deployu produkcyjnego na Cyberfolks VPS — rozwiązania: prometheus_client
+multiprocess mode (`PROMETHEUS_MULTIPROC_DIR`) albo przejście na wariant z
+OTel Collectorem (patrz alternatywy w decyzji) zbierającym OTLP z workerów.
+
+**Kontekst:** `docs/decisions/2026-09-22-observability-otel-prometheus.md`,
+`backend/Dockerfile` (`--workers 3`).
+
 ## [otwarte] `about/forms.py` ma tę samą lukę utraty pliku co naprawiony bug w `blog/forms.py` (2026-09-20)
 `PostAdminForm` (blog) dostał ostrzeżenie, gdy przesłany plik znika po
 błędzie walidacji formularza (przeglądarka czyści `<input type="file">`
@@ -117,6 +178,38 @@ manualny test z celowo błędnym kluczem przed pierwszym produkcyjnym użyciem.
 
 **Kontekst:** `docs/tasks/12-generator-postow-ai.md`, niezależne review
 `qa-agent` (sekcja 6, Defekt #2, informational/low).
+
+## [zrobione] Domyślne granice bucketów histogramu `django_db_query_duration_seconds` niedopasowane do jednostki (sekundy vs milisekundy) — p95 mylący (2026-09-22)
+Przy dokładaniu panelu "DB query latency p95" do `http-overview.json` (task 14,
+uzupełnienie po sekcji 1a) zweryfikowane empirycznie przez datasource proxy
+Grafany: `histogram_quantile(0.95, sum by (operation, le) (rate(django_db_query_duration_seconds_bucket{job="backend"}[5m])))`
+zwraca `4.75` (sekund) dla ruchu, gdzie realny `_sum`/`_count` daje średnio
+~1.1ms na zapytanie (`_sum=0.166`, `_count=150`). Przyczyna: `meter.create_histogram(...)`
+w `core/telemetry.py` (sekcja 1a) nie ustawia jawnych `explicit_bucket_boundaries`
+— OTel SDK Python używa domyślnych granic `[0, 5, 10, 25, 50, 75, 100, 250,
+500, 750, 1000, 2500, 5000, 7500, 10000]`, zaprojektowanych pod **milisekundy**,
+podczas gdy metryka jest w **sekundach** (`unit="s"`, `duration =
+time.perf_counter() - start` bez konwersji). Efekt: prawie wszystkie zapytania
+(rzędu milisekund) trafiają do pierwszego niezerowego bucketu `le=5.0`
+(czyli "≤5 sekund"), więc `histogram_quantile` interpoluje liniowo między 0 a
+5s i zwraca wartości rzędu sekund zamiast milisekund — panel istnieje i
+zwraca niepuste dane (zgodnie z zakresem uzupełnienia), ale liczby są
+praktycznie bezużyteczne do realnej oceny p95. Nie naprawione w tym
+uzupełnieniu — wymagałoby zmiany `backend/src/core/telemetry.py`
+(`View(aggregation=ExplicitBucketHistogramAggregation([...]))` z granicami
+rzędu ułamków sekundy, np. `[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5,
+1, 2.5, 5]`), poza zakresem infra-agenta (`backend/` nie w jego katalogach).
+
+**Kontekst:** `infra/grafana/provisioning/dashboards/http-overview.json`
+(panel "DB query latency p95"), `backend/src/core/telemetry.py`
+(`django_db_query_duration_seconds`, sekcja 1a), `docs/tasks/14-observability-otel-prometheus.md`.
+
+**Fix:** `backend/src/core/telemetry.py` — `MeterProvider` dostaje `views=[View(instrument_name="django_db_query_duration_seconds", aggregation=ExplicitBucketHistogramAggregation(boundaries=(0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5)))]`
+(w sekundach, dopasowane do realnej skali ~1ms/zapytanie z marginesem do 5s).
+`View`/`ExplicitBucketHistogramAggregation` importowane z `opentelemetry.sdk.metrics.view`
+(nie z `opentelemetry.sdk.metrics` jak w pierwotnym szkicu znaleziska — zweryfikowane
+bezpośrednio w zainstalowanej wersji SDK). Szczegóły weryfikacji i wynik przed/po:
+`docs/tasks/14-observability-otel-prometheus.md`, sekcja "Decyzje po drodze".
 
 ## [otwarte] Synchroniczne wywołanie LLM w generatorze postów może blokować worker gunicorna produkcyjnego (2026-09-21)
 `ai_content/services.py::generate_post_content` woła LLM synchronicznie
