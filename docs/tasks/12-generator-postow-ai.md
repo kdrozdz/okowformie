@@ -1,7 +1,7 @@
 # 12 — Generator postów przez AI (LangChain)
 
 - **Cel:** Zakładka „Post with AI” w Django Admin — redaktor wpisuje temat, LangChain (Anthropic/OpenAI/Grok, wybierane w zakładce „AI model”) generuje treść ze structured output (Pydantic), backend tworzy z tego `Post` (draft, PL) i pokazuje link + uzasadnienie SEO.
-- **Status:** gotowe — implementacja, testy, dokumentacja, `/check`, niezależne review `qa-agent` i `/code-review` zakończone, wszystkie naprawialne znaleziska naprawione. Nic nie jest jeszcze zmergowane do `dev` — czeka na świadomą decyzję o mergu.
+- **Status:** zmergowane. Implementacja, testy, dokumentacja, `/check`, niezależne review `qa-agent` i `/code-review` zakończone. Zmergowane do `main` (nie `dev` — `dev` zniknął z lokalnego repo w trakcie sesji, patrz „Decyzje po drodze”), merge commit potwierdzony, `pytest`/`ruff`/`mypy` zielone na `main` po mergu.
 
 ## Decyzje wejściowe
 
@@ -280,3 +280,19 @@ Naprawy #2–#5: commity `8741ee2` (defekty #2/#3, plik `models.py`) i
 `39d5a2e` (defekty #4/#5, pliki `schemas.py`/`services.py`), z aktualizacją
 testów. Zweryfikowane niezależnie: `pytest -q` — **263 passed**, `ruff`/`mypy`
 czyste (118 plików).
+
+### Branch `dev` zniknął — merge poszedł do `main` (2026-09-22)
+Przy próbie mergu okazało się, że lokalny branch `dev` (z którego ten task
+został odbity na starcie sesji) już nie istnieje — ani jako branch, ani w
+reflogu. `main` wskazywał dokładnie na ten sam commit (`3998865`), na którym
+`dev` stał na początku tej sesji, i śledzi `origin/main`. Nie znaleziono w
+tej sesji żadnej komendy, która skasowała `dev` — zmiana musiała zajść poza
+tą sesją. Użytkownik potwierdził: merge ma iść do `main`. Wykonane
+`git merge --no-ff 12-generator-postow-ai` na `main` (ten sam wzorzec
+`--no-ff` co poprzednie merge'e do `dev`, np. `392c9dc`), bez konfliktów,
+27 plików, merge commit `2df4a8a`. Po mergu: `pytest -q` — **263 passed**,
+`ruff`/`mypy` czyste na `main`. **Do ustalenia z użytkownikiem osobno:**
+czy `CLAUDE.md` → „Workflow Git” (dziś opisuje `dev` jako branch
+integracyjny) powinien zostać zaktualizowany pod merge do `main` na stałe,
+i czy branch `12-generator-postow-ai` oraz nieużywany branch `all` (też na
+`3998865`) można teraz skasować.
