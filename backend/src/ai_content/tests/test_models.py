@@ -88,12 +88,58 @@ def test_temperatura_poza_zakresem_0_2_jest_odrzucana_przez_full_clean(
     assert "temperature" in error.value.message_dict
 
 
-@pytest.mark.parametrize("temperature", [0, 2])
-def test_temperatura_na_granicy_zakresu_jest_akceptowana(db: Any, temperature: float) -> None:
+@pytest.mark.parametrize(
+    ("temperature", "provider"),
+    [
+        (0, AIProvider.ANTHROPIC),
+        (1, AIProvider.ANTHROPIC),  # granica dodatkowego limitu Anthropic, patrz niżej
+        (2, AIProvider.OPENAI),  # granica pola (`MaxValueValidator(2)`) dla dostawcy bez limitu 1
+    ],
+)
+def test_temperatura_na_granicy_zakresu_jest_akceptowana(
+    db: Any, temperature: float, provider: AIProvider
+) -> None:
+    settings_obj = AIProviderSettings(
+        provider=provider,
+        model_name="claude-test",
+        temperature=temperature,
+        max_output_tokens=4000,
+    )
+
+    settings_obj.full_clean()  # nie powinno podnieść ValidationError
+
+
+# --- Walidacja krzyżowa provider+temperature (Anthropic <= 1) --------------
+
+
+def test_temperatura_powyzej_1_dla_anthropic_jest_odrzucana_przez_clean(db: Any) -> None:
+    """Anthropic (Claude) odrzuca `temperature` > 1 na poziomie API, mimo że
+    pole samo w sobie dopuszcza do 2 (`MaxValueValidator(2)`) — dla OpenAI/xAI.
+    `AIProviderSettings.clean()` łapie to wcześniej, przy `full_clean()`."""
     settings_obj = AIProviderSettings(
         provider=AIProvider.ANTHROPIC,
         model_name="claude-test",
-        temperature=temperature,
+        temperature=1.5,
+        max_output_tokens=4000,
+    )
+
+    with pytest.raises(ValidationError) as error:
+        settings_obj.full_clean()
+
+    assert "temperature" in error.value.message_dict
+    assert "Anthropic" in error.value.message_dict["temperature"][0]
+
+
+@pytest.mark.parametrize("provider", [AIProvider.OPENAI, AIProvider.XAI])
+def test_temperatura_powyzej_1_dla_innych_dostawcow_jest_akceptowana(
+    db: Any, provider: AIProvider
+) -> None:
+    """Limit dodatkowy (<=1) dotyczy wyłącznie Anthropic — OpenAI/xAI akceptują
+    do 2, zgodnie z walidatorem pola."""
+    settings_obj = AIProviderSettings(
+        provider=provider,
+        model_name="model-test",
+        temperature=1.5,
         max_output_tokens=4000,
     )
 

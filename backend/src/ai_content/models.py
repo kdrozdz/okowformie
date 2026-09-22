@@ -9,10 +9,18 @@ Wzorowane 1:1 na singletonie `about.models.AboutMe` — ten sam wzorzec
 
 from typing import Any, ClassVar
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from .constants import AIProvider
+
+#: Anthropic (Claude) odrzuca `temperature` powyżej 1 na poziomie API — inni
+#: obsługiwani dostawcy (OpenAI, xAI) akceptują do 2. Walidator pola
+#: (`MaxValueValidator`) musi zostać przy 2, żeby nie blokować redaktora
+#: zmieniającego providera na jeden z pozostałych dwóch; ten dodatkowy limit
+#: obowiązuje tylko w kombinacji z `AIProvider.ANTHROPIC` — patrz `clean()`.
+ANTHROPIC_MAX_TEMPERATURE = 1
 
 
 class AIProviderSettings(models.Model):
@@ -50,7 +58,10 @@ class AIProviderSettings(models.Model):
         verbose_name="Temperatura",
         default=0.7,
         validators=[MinValueValidator(0), MaxValueValidator(2)],
-        help_text="Od 0 (przewidywalnie) do 2 (kreatywnie). Zalecane 0,5–1.",
+        help_text=(
+            "Od 0 (przewidywalnie) do 2 (kreatywnie) — dla Anthropic maksimum to 1. "
+            "Zalecane 0,5–1."
+        ),
     )
     max_output_tokens = models.PositiveIntegerField(
         verbose_name="Maks. tokenów wyjścia",
@@ -89,6 +100,27 @@ class AIProviderSettings(models.Model):
         self.pk = self.SINGLETON_ID
         super().save(*args, **kwargs)
 
+    def clean(self) -> None:
+        """Walidacja krzyżowa `provider`+`temperature`.
+
+        `MaxValueValidator(2)` na polu `temperature` sam w sobie nie wystarcza
+        — jest poprawny dla OpenAI/xAI, ale Anthropic odrzuca wartości >1 na
+        poziomie API, dopiero przy wywołaniu LLM w `ai_content.services.
+        generate_post_content` (złapane przez generyczny `except Exception`,
+        z komunikatem, który nigdy nie wspomina o temperaturze). `clean()`
+        łapie to wcześniej, przy `full_clean()` — w adminie i wszędzie indziej.
+        """
+        super().clean()
+        if self.provider == AIProvider.ANTHROPIC and self.temperature > ANTHROPIC_MAX_TEMPERATURE:
+            raise ValidationError(
+                {
+                    "temperature": (
+                        "Anthropic (Claude) akceptuje temperaturę tylko od 0 do 1. "
+                        "Zmniejsz wartość albo wybierz innego dostawcę."
+                    )
+                }
+            )
+
 
 class PostGenerator(AIProviderSettings):
     """Proxy model — ta sama tabela co `AIProviderSettings`, druga rejestracja
@@ -103,3 +135,13 @@ class PostGenerator(AIProviderSettings):
         proxy = True
         verbose_name = "Post z AI"
         verbose_name_plural = "Post z AI"
+        #: Bez domyślnych `add/change/delete/view_postgenerator` — dostęp do
+        #: zakładki „Post z AI" jest kontrolowany przez `blog.add_post`
+        #: + `blog.change_post` (`PostGeneratorAdmin._can_generate`), nigdy
+        #: przez uprawnienia tego modelu. Bez tej opcji Django tworzyłoby
+        #: cztery uprawnienia, których żaden kod nigdy nie sprawdza — superuser
+        #: nadający `ai_content.view_postgenerator` przez standardowy panel
+        #: Użytkownicy/Grupy dostałby złudzenie kontroli nad dostępem, które
+        #: nic nie robi. Ten sam wzorzec co `blog.models.PostTranslation.Meta`
+        #: i `about.models.AboutMeTranslation.Meta`.
+        default_permissions = ()
