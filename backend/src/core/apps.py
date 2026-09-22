@@ -13,3 +13,11 @@ class CoreConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "core"
     verbose_name = "Rdzeń"
+
+    def ready(self) -> None:
+        from django.conf import settings
+
+        if settings.OTEL_METRICS_ENABLED:
+            from core.telemetry import setup_telemetry
+
+            setup_telemetry()
