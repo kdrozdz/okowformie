@@ -1,9 +1,11 @@
-"""`_build_system_prompt`, `generate_post_content`, `create_draft_post_from_generated_content`."""
+"""`_build_system_prompt`, `_build_user_prompt`, `generate_post_content`,
+`create_draft_post_from_generated_content`."""
 
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from ai_content import services
 from ai_content.models import AIProviderSettings
@@ -11,6 +13,7 @@ from ai_content.schemas import GeneratedPostContent
 from ai_content.services import (
     PostGenerationError,
     _build_system_prompt,
+    _build_user_prompt,
     create_draft_post_from_generated_content,
     generate_post_content,
 )
@@ -20,31 +23,42 @@ from blog.models import Post, PostTranslation
 pytestmark = pytest.mark.django_db
 
 
-# --- _build_system_prompt --------------------------------------------------
+# --- _build_user_prompt: temat + fokus lokalny -------------------------------
 
 
-def test_prompt_zawiera_temat() -> None:
-    prompt = _build_system_prompt("Soczewki kontaktowe dla astygmatyków", "Wrocław, Polska", "")
+def test_user_prompt_zawiera_temat() -> None:
+    prompt = _build_user_prompt("Soczewki kontaktowe dla astygmatyków", "Wrocław, Polska")
 
     assert "Soczewki kontaktowe dla astygmatyków" in prompt
 
 
-def test_prompt_zawiera_fokus_lokalny() -> None:
-    prompt = _build_system_prompt("Dobór okularów", "Kraków, Polska", "")
+def test_user_prompt_zawiera_fokus_lokalny() -> None:
+    prompt = _build_user_prompt("Dobór okularów", "Kraków, Polska")
 
     assert "Kraków, Polska" in prompt
 
 
-def test_prompt_zawiera_dodatkowe_instrukcje_gdy_niepuste() -> None:
-    prompt = _build_system_prompt(
-        "Dobór okularów", "Kraków, Polska", "Pisz jak doświadczony optometrysta."
-    )
+# --- _build_system_prompt: persona/zasady/limity/extra_instructions ---------
+
+
+def test_system_prompt_nie_zawiera_tematu_ani_fokusu_lokalnego() -> None:
+    """Temat i fokus lokalny trafiają do `HumanMessage` (`_build_user_prompt`),
+    nie do `SystemMessage` — rozdzielone, żeby część providerów trzymała się
+    instrukcji systemowych ściślej niż zapytania użytkownika."""
+    prompt = _build_system_prompt("")
+
+    assert "Soczewki kontaktowe dla astygmatyków" not in prompt
+    assert "Wrocław, Polska" not in prompt
+
+
+def test_system_prompt_zawiera_dodatkowe_instrukcje_gdy_niepuste() -> None:
+    prompt = _build_system_prompt("Pisz jak doświadczony optometrysta.")
 
     assert "Pisz jak doświadczony optometrysta." in prompt
 
 
-def test_prompt_bez_sekcji_dodatkowych_instrukcji_gdy_puste() -> None:
-    prompt = _build_system_prompt("Dobór okularów", "Kraków, Polska", "")
+def test_system_prompt_bez_sekcji_dodatkowych_instrukcji_gdy_puste() -> None:
+    prompt = _build_system_prompt("")
 
     assert "Dodatkowe wytyczne od redakcji" not in prompt
 
@@ -66,7 +80,8 @@ def test_generate_post_content_zwraca_generated_content_przy_sukcesie(
     ai_provider_settings: AIProviderSettings,
     mock_generated_content: GeneratedPostContent,
 ) -> None:
-    fake_init_chat_model = MagicMock(return_value=_fake_chat_returning(mock_generated_content))
+    fake_chat = _fake_chat_returning(mock_generated_content)
+    fake_init_chat_model = MagicMock(return_value=fake_chat)
     monkeypatch.setattr(services, "init_chat_model", fake_init_chat_model)
 
     result = generate_post_content(
@@ -75,6 +90,13 @@ def test_generate_post_content_zwraca_generated_content_przy_sukcesie(
 
     assert result == mock_generated_content
     fake_init_chat_model.assert_called_once()
+
+    structured_chat = fake_chat.with_structured_output.return_value
+    (messages,), _kwargs = structured_chat.invoke.call_args
+    assert isinstance(messages[0], SystemMessage)
+    assert isinstance(messages[1], HumanMessage)
+    assert "Soczewki kontaktowe" in messages[1].content
+    assert "Wrocław, Polska" in messages[1].content
 
 
 def test_generate_post_content_podnosi_post_generation_error_z_polskim_komunikatem(
