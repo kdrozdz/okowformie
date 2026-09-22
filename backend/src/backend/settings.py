@@ -92,6 +92,11 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Liczy zapytania SQL wykonane w trakcie requestu (task 14, obserwowalność)
+    # — jak najwcześniej w łańcuchu, żeby złapać też zapytania DB z późniejszych
+    # middleware (sesje, auth). No-op gdy OTEL_METRICS_ENABLED=False (domyślne
+    # poza kontenerem `backend` w docker-compose.yml).
+    "core.telemetry.DBQueryMetricsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -267,6 +272,16 @@ SPECTACULAR_SETTINGS = {
     # nie przez auto-discovery drf-spectacular.
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+# --- Observability (OpenTelemetry → Prometheus, tylko dev) -----------------
+# Patrz `docs/decisions/2026-09-22-observability-otel-prometheus.md` i
+# `core/telemetry.py`. Domyślnie WYŁĄCZONE: `setup_telemetry()` binduje
+# `start_http_server(port=9464)` w procesie — każda jednorazowa komenda
+# `manage.py` (migrate, test, shell, pytest) próbowałaby zbindować ten sam
+# port już zajęty przez działający `runserver`/`gunicorn` i wywaliłaby się
+# błędem "address already in use". Włączane jawnie tylko dla usługi
+# `backend` w `docker-compose.yml`.
+OTEL_METRICS_ENABLED = _env_bool("OTEL_METRICS_ENABLED", False)
 
 # --- Twarde ustawienia bezpieczeństwa poza DEBUG ---------------------------
 
