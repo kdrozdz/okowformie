@@ -1,0 +1,8 @@
+{% comment %}
+Motyw okowFormie jest jeden (bez ciemnego wariantu) — przełącznik z Django
+nie miałby nic do przełączania, a bez `admin/js/theme.js` (wyłączonego w
+`admin/base_site.html`, blok `dark-mode-vars`) byłby niefunkcjonalnym
+przyciskiem. Nadpisanie na puste usuwa go z headera (zalogowani) i ze
+strony logowania — jedno miejsce zamiast obu.
+Decyzja: `docs/tasks/15-motyw-panelu-admina.md`.
+{% endcomment %}

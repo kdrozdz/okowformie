@@ -38,6 +38,16 @@ def superuser_request(django_user_model: Any) -> Any:
     return request
 
 
+def test_extra_instructions_ma_powiekszony_textarea(
+    ai_provider_settings_admin: AIProviderSettingsAdmin, superuser_request: Any
+) -> None:
+    """`rows` `4` -> `8`: domyślna treść pola to już dwa zdania, realna
+    instrukcja redaktora będzie dłuższa (`docs/tasks/15-motyw-panelu-admina.md`)."""
+    form_class = ai_provider_settings_admin.get_form(superuser_request)
+
+    assert form_class.base_fields["extra_instructions"].widget.attrs.get("rows") == 8
+
+
 def test_dodanie_dozwolone_gdy_singleton_nie_istnieje(
     ai_provider_settings_admin: AIProviderSettingsAdmin, superuser_request: Any
 ) -> None:

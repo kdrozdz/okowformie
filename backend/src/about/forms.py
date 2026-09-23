@@ -28,6 +28,11 @@ class AboutMeAdminForm(TranslatableModelForm):
         fields = "__all__"
         widgets = {
             "photo_alt": forms.TextInput(attrs={"size": 80}),
+            # Ten sam wzorzec co `blog.forms.PostAdminForm.Meta.widgets` —
+            # domyślny `TextInput` był węższy niż `photo_alt` mimo podobnej
+            # długości treści (`docs/tasks/15-motyw-panelu-admina.md`).
+            "meta_title": forms.TextInput(attrs={"size": 80}),
+            "meta_description": forms.Textarea(attrs={"rows": 3}),
             # Parler buduje pola tłumaczone poza `formfield_overrides` admina,
             # więc admin sam by go nie podmienił (jak w `blog.forms.PostAdminForm`).
             "bio": AdminProseEditorWidget,

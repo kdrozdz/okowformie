@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}">
+    <img src="{% static 'admin/img/logo.png' %}" alt="okowFormie">
+    {{ site_header|default:_('Django administration') }}
+  </a>
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% comment %}
+Motyw jest jeden, zdefiniowany w okowformie-admin.css — bez dark_mode.css/theme.js
+Django (`dark-mode-vars` domyślnie je ładuje) i bez przełącznika w headerze, którego
+JS by już nie działał. Decyzja: `docs/tasks/15-motyw-panelu-admina.md`.
+{% endcomment %}
+{% block dark-mode-vars %}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/okowformie-admin.css' %}" {% csp_nonce_attr %}>{% endblock %}

@@ -163,3 +163,13 @@ def test_rok_w_zakresie_przechodzi(make_about: Callable[..., AboutMe]) -> None:
     certificate = Certificate(about=about, name="X", issuer="Y", issued_year=timezone.now().year)
 
     certificate.full_clean()  # nie podnosi wyjątku
+
+
+def test_issuer_ma_help_text() -> None:
+    """`issuer` był jedynym polem certyfikatu bez opisu, obok `name`/`image`/
+    `order`, które go mają (`docs/tasks/15-motyw-panelu-admina.md`) — sanity
+    check obecności, nie treści słowo w słowo (żeby nie być kruchym na
+    przyszłe redagowanie tekstu)."""
+    help_text = Certificate._meta.get_field("issuer").help_text
+
+    assert help_text

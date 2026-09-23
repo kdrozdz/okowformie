@@ -211,6 +211,25 @@ rzędu ułamków sekundy, np. `[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5,
 bezpośrednio w zainstalowanej wersji SDK). Szczegóły weryfikacji i wynik przed/po:
 `docs/tasks/14-observability-otel-prometheus.md`, sekcja "Decyzje po drodze".
 
+## [otwarte] `ruff format --check` niesformatowany na 8 plikach, niezwiązanych z żadnym bieżącym taskiem (2026-09-23)
+Przy weryfikacji taska 15 (motyw panelu admina) `ruff check .` jest czysty,
+ale `ruff format --check .` zgłasza 8 plików wymagających reformatowania —
+żaden z nich nie jest plikiem, który ten task dotykał merytorycznie (poza
+jedną linią w `ai_content/admin.py`, gdzie diff ograniczony do faktycznej
+zmiany, formatowanie reszty pliku pozostało nienaruszone świadomie, patrz
+`docs/tasks/15-motyw-panelu-admina.md`). Lista: `about/admin.py`,
+`about/tests/test_models.py`, `ai_content/admin.py`, `ai_content/models.py`,
+`backend/management/commands/seed_demo_data.py`, `branding/admin.py`,
+`core/tests/test_api.py`. Najpewniej drift między wersją `ruff` użytą przy
+pisaniu tego kodu i wersją aktualnie zainstalowaną (`pyproject.toml`:
+`ruff>=0.16.8`, bez pinowania konkretnej wersji formatującej). `/check` nie
+wywołuje `ruff format --check` (tylko `ruff check`), więc to nie blokuje
+merge, ale drift będzie rósł przy każdym kolejnym tasku, jeśli nikt tego nie
+ujednolici jednym, świadomym commitem `ruff format .` na całym repo.
+
+**Kontekst:** `docs/tasks/15-motyw-panelu-admina.md`, sekcja "Decyzje po
+drodze" → "Implementacja (krok 2 planu, backend-agent)".
+
 ## [otwarte] Synchroniczne wywołanie LLM w generatorze postów może blokować worker gunicorna produkcyjnego (2026-09-21)
 `ai_content/services.py::generate_post_content` woła LLM synchronicznie
 (do 60s timeout) wewnątrz widoku admina — świadoma decyzja #7 w
@@ -226,4 +245,33 @@ decyzji #7), ale warto to sprawdzić, jeśli funkcja zacznie być używana
 częściej niż okazjonalnie, albo przy skalowaniu liczby workerów.
 
 **Kontekst:** `docs/tasks/12-generator-postow-ai.md`, `/code-review medium`
+na branchu `12-generator-postow-ai`, `backend/Dockerfile` (`--workers 3`).
+
+## [otwarte] `{% csp_nonce_attr %}` w szablonach admina nie robi nic — brak CSP middleware/policy w `settings.py` (2026-09-23)
+`backend/src/backend/templates/admin/base_site.html:20` dołącza
+`okowformie-admin.css` przez `{% csp_nonce_attr %}` (Django 6.1 wbudowany
+tag CSP, zweryfikowane w `django/utils/csp.py::nonce_attr` — nie wymaga
+`{% load %}`, sam plik nie ma żadnej biblioteki niestandardowej). Tag
+renderuje atrybut `nonce="..."` tylko wtedy, gdy w kontekście requestu jest
+nonce, co dzieje się jedynie za `django.middleware.csp.
+ContentSecurityPolicyMiddleware` z ustawionym `SECURE_CSP` — żadne z tych
+dwóch nie istnieje w `backend/src/backend/settings.py` (zweryfikowane:
+`grep -rn "SECURE_CSP\|ContentSecurityPolicyMiddleware"` bez wyniku). Efekt:
+tag zawsze renderuje puste `""`, więc `<link>` do arkusza stylów admina
+wygląda jak przygotowany pod CSP, ale w praktyce nie ma żadnej polityki CSP
+chroniącej panel ani resztę serwisu — `.claude/rules/security.md` wymaga
+nagłówków bezpieczeństwa (HSTS, CSP, X-Content-Type-Options,
+Referrer-Policy, CSP bez `unsafe-inline`), a CSP konkretnie nie jest
+wdrożone wcale. Nie jest to regresja taska 15 (backend-agent nie dotykał
+`settings.py`, użycie tagu jest poprawnym wzorcem "gdyby CSP kiedyś
+włączono") — pre-existing gap z wcześniejszych tasków, tylko zauważony przy
+tym review. Do zrobienia: dodać `ContentSecurityPolicyMiddleware` +
+`SECURE_CSP` do `MIDDLEWARE`/`settings.py` (dyrektywy `script-src`/
+`style-src` z `'self'` + noncem, bez `unsafe-inline`), jako osobny task
+bezpieczeństwa, nie doklejka do kolejnego niezwiązanego taska.
+
+**Kontekst:** `backend/src/backend/templates/admin/base_site.html:20`,
+`backend/src/backend/settings.py` (brak `SECURE_CSP`/
+`ContentSecurityPolicyMiddleware` w `MIDDLEWARE`), `.claude/rules/security.md`,
+`docs/tasks/15-motyw-panelu-admina.md`.
 na branchu `12-generator-postow-ai`, `backend/Dockerfile` (`--workers 3`).

@@ -36,7 +36,10 @@ from .services import (
 class AIProviderSettingsAdmin(admin.ModelAdmin):
     fields = ("provider", "model_name", "temperature", "max_output_tokens", "extra_instructions")
     formfield_overrides = {
-        models.TextField: {"widget": forms.Textarea(attrs={"rows": 4})},
+        # `rows=4` było za mało: domyślna treść `extra_instructions` to już
+        # dwa zdania, realna instrukcja redaktora będzie dłuższa
+        # (`docs/tasks/15-motyw-panelu-admina.md`).
+        models.TextField: {"widget": forms.Textarea(attrs={"rows": 8})},
     }
 
     def has_add_permission(self, request: HttpRequest) -> bool:

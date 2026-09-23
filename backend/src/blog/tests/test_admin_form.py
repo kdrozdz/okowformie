@@ -131,6 +131,16 @@ def test_tresc_ze_skryptem_zapisuje_sie_oczyszczona(author: Any) -> None:
     assert "<script" not in post.translations.get(language_code=Language.PL).content
 
 
+def test_meta_title_i_meta_description_maja_powiekszone_widgety(author: Any) -> None:
+    """Wcześniej domyślny, wąski `TextInput` mimo pola na pełne zdanie (do
+    60/160 znaków) — niespójność z resztą pól tej długości w tym samym
+    formularzu (`docs/tasks/15-motyw-panelu-admina.md`)."""
+    form = build_form(author)
+
+    assert form.fields["meta_title"].widget.attrs.get("size") == 80
+    assert form.fields["meta_description"].widget.attrs.get("rows") == 3
+
+
 def test_formularz_ma_pola_seo_i_status(author: Any) -> None:
     """Pola tłumaczone muszą realnie wejść do formularza, nie tylko do modelu."""
     form = build_form(author)
