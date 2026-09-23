@@ -9,7 +9,7 @@
   ma i realnie ułatwiłyby odnalezienie wpisu. Wyłącznie warstwa
   wizualna/nawigacyjna i UX formularzy — bez zmian w logice biznesowej,
   walidacji czy schemacie bazy.
-- **Status:** w toku — plan czeka na akceptację przed implementacją.
+- **Status:** gotowe, zmergowane do `main`.
 
 ## Kontekst
 
@@ -81,7 +81,7 @@ Znaleziska z audytu obecnego kodu (do naprawy w kroku backend-agenta niżej):
 
 ## Plan
 
-- [ ] **uiux-agent** — spec: mapowanie tokenów kolorów frontendu na role
+- [x] **uiux-agent** — spec: mapowanie tokenów kolorów frontendu na role
       Django Admin (header, przyciski, linki, focus states, istniejące
       kolorowe kropki statusu w `blog`/`branding` — zostają czy dostają
       nową paletę?), układ i kolejność kategorii na stronie głównej, miejsce
@@ -94,6 +94,9 @@ Znaleziska z audytu obecnego kodu (do naprawy w kroku backend-agenta niżej):
       `UserAdmin`) pod kątem brakujących, realnie użytecznych filtrów/
       `search_fields` — lista konkretnych rekomendacji do wdrożenia w
       kroku backend-agenta.
+
+      (`uiux-agent` zawiesił się dwa razy — spec przygotowany bezpośrednio,
+      patrz „Decyzje po drodze”.)
 - [x] **backend-agent** — implementacja wg spec:
   - `admin.site.site_header` / `site_title` / `index_title` — branding
     okowFormie, jedno miejsce (`backend/src/backend/admin.py` lub `apps.py`
@@ -130,14 +133,16 @@ Znaleziska z audytu obecnego kodu (do naprawy w kroku backend-agenta niżej):
       musi nadal działać tak jak dziś, w tym `PostGeneratorAdmin`). Nowe
       filtry/`search_fields` (jeśli dodane) dostają test na faktyczne
       zawężenie wyniku, nie tylko na obecność w konfiguracji.
-- [ ] `/check` (backend: ruff, mypy, `manage.py check`, pytest,
-      `makemigrations --check` — bez zmian schematu, więc czysto).
-- [ ] `/code-review` (qa-agent nie recenzuje własnego kodu —
-      `code-quality.md`).
-- [ ] Sprawdzone na żywo w przeglądarce (`docker compose up`, panel pod
-      `ADMIN_URL`) — strona logowania, strona główna, przynajmniej jeden
-      formularz edycji (np. `Post`) z nowym motywem, zanim task zamknięty
-      jako gotowy.
+- [x] `/check` (backend: ruff, mypy, `manage.py check`, pytest,
+      `makemigrations --check` — bez zmian schematu, więc czysto). Zielone
+      po każdej rundzie poprawek, finalnie **293 passed**.
+- [x] `/code-review` (qa-agent nie recenzuje własnego kodu —
+      `code-quality.md`). Dwie rundy: pierwsza czysta, druga znalazła i
+      naprawiono zniknięcie `auth.Group` z nawigacji (patrz „Decyzje po
+      drodze”).
+- [x] Sprawdzone na żywo w przeglądarce przez użytkownika — dwa zgłoszone
+      defekty wizualne (dark mode „białe na białym”, zbyt słabe obramowania
+      pól) naprawione i potwierdzone jako OK.
 
 ## Kryteria akceptacji
 
