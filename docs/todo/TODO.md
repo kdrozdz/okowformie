@@ -274,4 +274,28 @@ bezpieczeństwa, nie doklejka do kolejnego niezwiązanego taska.
 `backend/src/backend/settings.py` (brak `SECURE_CSP`/
 `ContentSecurityPolicyMiddleware` w `MIDDLEWARE`), `.claude/rules/security.md`,
 `docs/tasks/15-motyw-panelu-admina.md`.
+
+## [otwarte] `test_telemetry.py` failuje wewnątrz kontenera `backend`, bo `docker-compose.yml` ustawia `OTEL_METRICS_ENABLED: True` domyślnie (2026-09-23)
+`uv run pytest` uruchomiony przez `docker compose exec backend` failuje na
+`test_middleware_nie_wola_execute_wrapper_gdy_otel_wylaczony` i
+`test_ready_nie_wola_setup_telemetry_gdy_flaga_wylaczona`
+(`src/core/tests/test_telemetry.py`) — oba zakładają
+`OTEL_METRICS_ENABLED=False`, ale `docker-compose.yml:101` ustawia
+`OTEL_METRICS_ENABLED: ${OTEL_METRICS_ENABLED:-True}` jako domyślną wartość
+dla usługi `backend`, więc `printenv OTEL_METRICS_ENABLED` w kontenerze
+zwraca `True` i testy widzą realne wywołanie `setup_telemetry()`, którego
+nie oczekują. Niezwiązane z `downloads` (taska 16) — zauważone tylko przy
+uruchamianiu pełnego `uv run pytest` przez `docker compose exec` przy
+weryfikacji tego taska; poza `core`/`downloads` nic nie zmieniono. Do
+sprawdzenia: albo testy powinny same nadpisywać `OTEL_METRICS_ENABLED` przez
+`override_settings`/`monkeypatch` zamiast zakładać wartość ze środowiska,
+albo `docker-compose.yml` powinien mieć `OTEL_METRICS_ENABLED: False`
+domyślnie dla usługi `backend` używanej też do testów (z osobnym profilem/
+override dla obserwowalności, jeśli to ma zostać włączone celowo).
+
+**Kontekst:** `backend/src/core/tests/test_telemetry.py`
+(`test_middleware_nie_wola_execute_wrapper_gdy_otel_wylaczony`,
+`test_ready_nie_wola_setup_telemetry_gdy_flaga_wylaczona`),
+`docker-compose.yml:101`, `docs/tasks/16-pliki-do-pobrania.md` (znalezione
+przy weryfikacji `uv run pytest` przez `docker compose exec backend`).
 na branchu `12-generator-postow-ai`, `backend/Dockerfile` (`--workers 3`).
