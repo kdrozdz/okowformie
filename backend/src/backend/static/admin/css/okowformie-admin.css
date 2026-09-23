@@ -1,0 +1,96 @@
+/*
+ * Motyw okowFormie dla Django Admin.
+ *
+ * Nadpisuje zmienne CSS z `admin/css/base.css` (Django) — kolory
+ * skopiowane z tokenów frontendu (`frontend/src/app/globals.css`), nie
+ * zaimportowane: Django Admin i Next.js to inny build/runtime, bez
+ * wspólnego pliku źródłowego (rozjazd przy przyszłej zmianie brandu
+ * odnotowany w `docs/tasks/15-motyw-panelu-admina.md`, „Poza zakresem”).
+ *
+ * Spec kolorów, kontrast WCAG i uzasadnienie każdej wartości:
+ * `docs/tasks/15-motyw-panelu-admina.md` → „Decyzje po drodze” → „Spec
+ * kolorów/layoutu”. Nie dotyka `--delete-button-bg` (czerwony Django
+ * zostaje — kolor „usuń” to semantyka bezpieczeństwa, nie marka) i nie
+ * duplikuje kolorowych kropek statusu z `blog/admin.py`/ikonek z
+ * `branding/admin.py` (te już zatwierdzone, poza zakresem tego pliku).
+ *
+ * Dark mode Django (`admin/css/dark_mode.css`, `admin/js/theme.js`,
+ * przełącznik w headerze) jest całkiem wyłączony w `admin/base_site.html`
+ * (blok `dark-mode-vars` nadpisany na pusty, `color_theme_toggle.html`
+ * nadpisany na pusty) — bez tego pierwsza wersja tego pliku nadpisywała
+ * tylko część zmiennych Django (np. `--body-bg`, nie `--body-fg`), więc
+ * przy systemowym dark mode lub ręcznym przełączniku `--body-fg` zostawał
+ * jasny z `dark_mode.css`, a `--body-bg` jasny z tego pliku — jasny tekst
+ * na jasnym tle (zgłoszone: „białe kolory się nakładają"). Skoro
+ * `dark_mode.css`/`theme.js` się nie ładują, `data-theme` nigdy nie jest
+ * ustawiane — bezwarunkowy `:root` niżej wystarcza, bez duplikowania
+ * selektora.
+ */
+
+:root {
+  --header-bg: #1f2b57;
+  --header-color: #ffffff;
+  --header-link-color: #ffffff;
+  --header-branding-color: #ffffff;
+
+  --link-fg: #5b4fa0;
+  --link-hover-color: #1f2b57;
+
+  --primary: #5b4fa0;
+  --button-bg: #5b4fa0;
+  --button-hover-bg: #46397d;
+
+  --default-button-bg: #1f2b57;
+  --default-button-hover-bg: #16204a;
+
+  --body-bg: #f4f3fa;
+  /*
+   * Zgłoszenie użytkownika po pierwszym wdrożeniu: "wszystko się zlewa" —
+   * `--border-color` (obramowanie `<input>`/`<textarea>`/`<select>`,
+   * `forms.css`) i `--hairline-color` (linie działowe w `.module`,
+   * `base.css`) miały tu wcześniej tę samą, prawie białą wartość co
+   * `--body-bg` (kontrast ~1:1, pola formularza wizualnie nie odznaczały
+   * się od tła strony). Dociemnione: `--border-color` (~3.7:1 wobec
+   * `--body-bg` — realnie widoczna otoczka pola) mocniej niż
+   * `--hairline-color` (~1.5:1 — subtelna linia wewnątrz sekcji, ten sam
+   * stosunek "border ciemniejszy niż hairline" co w domyślnym Django
+   * `#ccc`/`#e8e8e8`).
+   */
+  --border-color: #8a869c;
+  --hairline-color: #c9c6da;
+}
+
+/*
+ * `#site-name a:link`/`a:visited` w `admin/css/base.css` koloruje tekst
+ * nagłówka wprost z `var(--accent)` (żółty), nie z `--header-branding-color`
+ * ustawionym wyżej — bez tego nadpisania tekst "okowFormie — Panel
+ * redakcyjny" zostałby żółty na granatowym tle (kontrast spec liczył dla
+ * białego, nie dla domyślnego akcentu Django). Celowo nie nadpisujemy
+ * samego `--accent`: ten token steruje też tłem nagłówka kalendarza w
+ * widgecie daty (`admin/css/widgets.css`), które ma stały, ciemny tekst
+ * (`#333`) — podmiana `--accent` na indygo dałaby tam ciemny tekst na
+ * ciemnym tle, nowy problem z kontrastem poza zakresem tego taska.
+ */
+#site-name a:link,
+#site-name a:visited {
+  color: var(--header-branding-color);
+}
+
+/* Logo w headerze — jeden blok brandingu (`admin/base_site.html`),
+   renderowany też na stronie logowania (ten sam szablon, ten sam blok). */
+#site-name a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#site-name img {
+  height: 32px;
+  width: auto;
+}
+
+/* Wyższa specyficzność niż `#site-name img` (klasa + id) — wygrywa na
+   stronie logowania niezależnie od kolejności w źródle. */
+.login #branding img {
+  height: 56px;
+}

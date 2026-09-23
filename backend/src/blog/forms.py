@@ -36,6 +36,12 @@ class PostAdminForm(TranslatableModelForm):
             # pisania jednego zdania bez oddechu.
             "excerpt": forms.Textarea(attrs={"rows": 3}),
             "cover_image_alt": forms.TextInput(attrs={"size": 80}),
+            # Domyślny `TextInput` był węższy niż `cover_image_alt` mimo
+            # podobnej długości treści (tytuł/opis SEO, do 60/160 znaków) —
+            # niespójność, nie świadomy wybór (`docs/tasks/
+            # 15-motyw-panelu-admina.md`).
+            "meta_title": forms.TextInput(attrs={"size": 80}),
+            "meta_description": forms.Textarea(attrs={"rows": 3}),
             # Wariant widgetu dopasowany stylami do panelu. Parler buduje
             # pola tłumaczone poza `formfield_overrides` admina, więc admin
             # sam by go nie podmienił.

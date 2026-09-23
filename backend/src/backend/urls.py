@@ -7,7 +7,14 @@ from django.http import HttpRequest, JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from . import admin as _admin_theme  # noqa: F401 — patrz komentarz niżej
 from .settings import ADMIN_URL
+
+# `django.contrib.admin` odkryłby `backend.admin` sam przez autodiscover na
+# starcie Django, nawet bez importu wyżej — import jest tutaj jawnie, obok
+# rejestracji `admin.site.urls` niżej, żeby zależność (branding + grupowanie
+# strony głównej panelu, `backend/admin.py`) było widać bez znajomości tego
+# mechanizmu Django.
 
 
 def healthz(request: HttpRequest) -> JsonResponse:

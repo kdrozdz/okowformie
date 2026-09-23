@@ -16,6 +16,8 @@ class PostGenerationForm(forms.Form):
     topic = forms.CharField(
         label="Temat posta",
         max_length=200,
+        widget=forms.TextInput(attrs={"size": 60}),
+        help_text=("Główna myśl posta, jedną frazą albo krótkim zdaniem — szczegóły dopisze AI."),
         error_messages={
             "required": "Temat jest wymagany — bez niego AI nie wie, o czym napisać.",
             "max_length": (
@@ -28,6 +30,10 @@ class PostGenerationForm(forms.Form):
         label="Fokus lokalny",
         max_length=200,
         initial="Wrocław, Polska",
+        help_text=(
+            "Region albo miasto, dla którego AI pisze poradę — np. w przykładach, "
+            "jakie podaje w treści."
+        ),
         error_messages={
             "required": (
                 "Fokus lokalny jest wymagany — mówi AI, dla jakiego regionu pisze poradę."

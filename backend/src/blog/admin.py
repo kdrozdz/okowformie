@@ -96,7 +96,12 @@ class PostAdmin(TranslatableAdmin):
         "author",
         "created_at",
     )
-    search_fields = ("translations__title", "translations__slug", "translations__excerpt")
+    search_fields = (
+        "translations__title",
+        "translations__slug",
+        "translations__excerpt",
+        "author__username",
+    )
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
     list_per_page = 50

@@ -292,6 +292,7 @@ class Certificate(models.Model):
     issuer = models.CharField(
         verbose_name="Wystawca",
         max_length=200,
+        help_text='Instytucja albo organizacja, która wydała certyfikat, np. „ECOO".',
     )
     issued_year = models.PositiveSmallIntegerField(
         verbose_name="Rok wydania",
