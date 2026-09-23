@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 interface DownloadButtonProps {
   fileUrl: string;
@@ -8,6 +8,18 @@ interface DownloadButtonProps {
   label: string;
   ariaLabel: string;
   className: string;
+  /** Komunikat pod linkiem, gdy fetch zawiedzie i zadziała fallback `window.open`. */
+  errorMessage: string;
+  errorClassName: string;
+  /**
+   * Klasa kontenera wokół linku i komunikatu błędu. Konieczna, żeby oba
+   * razem pozostały JEDNYM flex-itemem karty w `DownloadList` — bez tego
+   * kontenera Fragment renderuje `<a>` i `<p role="alert">` jako dwa
+   * osobne dzieci `.card`, co przy `justify-content: space-between` na
+   * desktopie rozjeżdża przycisk i komunikat błędu po przeciwnych
+   * krawędziach karty (znalezisko z review `qa-agent`).
+   */
+  wrapperClassName: string;
 }
 
 /**
@@ -26,8 +38,18 @@ interface DownloadButtonProps {
  * plik wprost w nowej karcie, React `onClick` nie łapie tych kliknięć) i
  * "Kopiuj adres linku" w menu kontekstowym.
  */
-export function DownloadButton({ fileUrl, filename, label, ariaLabel, className }: DownloadButtonProps) {
+export function DownloadButton({
+  fileUrl,
+  filename,
+  label,
+  ariaLabel,
+  className,
+  errorMessage,
+  errorClassName,
+  wrapperClassName,
+}: DownloadButtonProps) {
   const isDownloadingRef = useRef(false);
+  const [hasError, setHasError] = useState(false);
 
   async function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
@@ -35,6 +57,7 @@ export function DownloadButton({ fileUrl, filename, label, ariaLabel, className 
       return;
     }
     isDownloadingRef.current = true;
+    setHasError(false);
 
     try {
       const response = await fetch(fileUrl);
@@ -55,16 +78,27 @@ export function DownloadButton({ fileUrl, filename, label, ariaLabel, className 
       // Nie połykamy błędu bez decyzji, co dalej (`.claude/rules/code-quality.md`)
       // — użytkownik i tak ma dostać plik, więc fallback to zachowanie
       // natywnego linku (nowa karta), nie cichy brak reakcji na klik.
+      // `setHasError` dokłada widoczny komunikat obok `console.error`:
+      // sam fallback (otwarcie w nowej karcie zamiast pobrania) jest łatwy
+      // do przeoczenia bez wyraźnej informacji, co się stało.
       console.error("Nie udało się pobrać pliku przez fetch, otwieram bezpośrednio:", error);
       window.open(fileUrl, "_blank", "noopener,noreferrer");
+      setHasError(true);
     } finally {
       isDownloadingRef.current = false;
     }
   }
 
   return (
-    <a href={fileUrl} onClick={handleClick} aria-label={ariaLabel} className={className}>
-      {label}
-    </a>
+    <div className={wrapperClassName}>
+      <a href={fileUrl} onClick={handleClick} aria-label={ariaLabel} className={className}>
+        {label}
+      </a>
+      {hasError ? (
+        <p role="alert" className={errorClassName}>
+          {errorMessage}
+        </p>
+      ) : null}
+    </div>
   );
 }

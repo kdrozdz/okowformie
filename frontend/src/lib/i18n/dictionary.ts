@@ -38,6 +38,7 @@ export interface Dictionary {
     metaDescription: string;
     empty: string;
     downloadLabel: string;
+    downloadError: string;
     previousPage: string;
     nextPage: string;
     paginationAriaLabel: string;
@@ -100,6 +101,7 @@ const DICTIONARIES: Record<Language, Dictionary> = {
         "Materiały do pobrania — ulotki, ćwiczenia i poradniki o zdrowiu wzroku w formacie PDF.",
       empty: "Brak plików do pobrania.",
       downloadLabel: "Pobierz plik",
+      downloadError: "Nie udało się pobrać pliku. Plik otworzył się w nowej karcie — spróbuj pobrać go stamtąd.",
       previousPage: "Poprzednia strona",
       nextPage: "Następna strona",
       paginationAriaLabel: "Stronicowanie",
@@ -160,6 +162,7 @@ const DICTIONARIES: Record<Language, Dictionary> = {
         "Downloadable materials — leaflets, exercises and guides about eye health in PDF format.",
       empty: "No downloads available yet.",
       downloadLabel: "Download file",
+      downloadError: "The file couldn't be downloaded. It opened in a new tab instead — try downloading it from there.",
       previousPage: "Previous page",
       nextPage: "Next page",
       paginationAriaLabel: "Pagination",

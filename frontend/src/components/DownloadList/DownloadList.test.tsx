@@ -22,14 +22,28 @@ const downloads: Download[] = [
 
 describe("DownloadList", () => {
   it("renderuje komunikat o pustej liście, gdy brak plików (pusty stan, nie błąd)", () => {
-    render(<DownloadList downloads={[]} downloadLabel="Pobierz plik" emptyMessage="Brak plików do pobrania." />);
+    render(
+      <DownloadList
+        downloads={[]}
+        downloadLabel="Pobierz plik"
+        downloadErrorMessage="Nie udało się pobrać pliku."
+        emptyMessage="Brak plików do pobrania."
+      />,
+    );
 
     expect(screen.getByText("Brak plików do pobrania.")).toBeInTheDocument();
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
   it("renderuje tytuł, opis i link pobierania dla każdego pliku", () => {
-    render(<DownloadList downloads={downloads} downloadLabel="Pobierz plik" emptyMessage="Brak plików." />);
+    render(
+      <DownloadList
+        downloads={downloads}
+        downloadLabel="Pobierz plik"
+        downloadErrorMessage="Nie udało się pobrać pliku."
+        emptyMessage="Brak plików."
+      />,
+    );
 
     expect(screen.getByRole("heading", { name: "Ćwiczenia dla oczu" })).toBeInTheDocument();
     expect(
@@ -51,7 +65,14 @@ describe("DownloadList", () => {
   });
 
   it("nie renderuje pustego akapitu opisu, gdy `description` jest pustym stringiem", () => {
-    render(<DownloadList downloads={[downloads[1]]} downloadLabel="Pobierz plik" emptyMessage="Brak plików." />);
+    render(
+      <DownloadList
+        downloads={[downloads[1]]}
+        downloadLabel="Pobierz plik"
+        downloadErrorMessage="Nie udało się pobrać pliku."
+        emptyMessage="Brak plików."
+      />,
+    );
 
     expect(screen.getByRole("heading", { name: "Ulotka: dobór soczewek" })).toBeInTheDocument();
     // Tylko nagłówek — brak dodatkowego <p> dla pustego opisu.

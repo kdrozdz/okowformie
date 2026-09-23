@@ -40,6 +40,9 @@ describe("DownloadButton", () => {
         label="Pobierz plik"
         ariaLabel="Pobierz plik: Cennik usług"
         className="link"
+        errorMessage="Nie udało się pobrać pliku."
+        errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 
@@ -58,9 +61,10 @@ describe("DownloadButton", () => {
     expect(clickedElement.download).toBe("cennik-uslug.pdf");
     expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:mock-url");
     expect(window.open).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("gdy fetch zawiedzie, nie zostawia martwego przycisku — otwiera oryginalny plik w nowej karcie", async () => {
+  it("gdy fetch zawiedzie, nie zostawia martwego przycisku — otwiera oryginalny plik w nowej karcie i pokazuje widoczny błąd", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const user = userEvent.setup();
@@ -72,6 +76,9 @@ describe("DownloadButton", () => {
         label="Pobierz plik"
         ariaLabel="Pobierz plik: Cennik usług"
         className="link"
+        errorMessage="Nie udało się pobrać pliku."
+        errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 
@@ -82,6 +89,9 @@ describe("DownloadButton", () => {
       "_blank",
       "noopener,noreferrer",
     );
+    // Bez tego użytkownik nie ma żadnej wskazówki, że plik otworzył się w
+    // nowej karcie zamiast się pobrać (fallback jest łatwy do przeoczenia).
+    expect(screen.getByRole("alert")).toHaveTextContent("Nie udało się pobrać pliku.");
   });
 
   it("gdy backend odpowie błędem HTTP, otwiera oryginalny plik w nowej karcie zamiast pobrać treść błędu jako plik", async () => {
@@ -96,6 +106,9 @@ describe("DownloadButton", () => {
         label="Pobierz plik"
         ariaLabel="Pobierz plik: Cennik usług"
         className="link"
+        errorMessage="Nie udało się pobrać pliku."
+        errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 
@@ -107,6 +120,7 @@ describe("DownloadButton", () => {
       "_blank",
       "noopener,noreferrer",
     );
+    expect(screen.getByRole("alert")).toHaveTextContent("Nie udało się pobrać pliku.");
   });
 
   it("renderuje realny `href` do oryginalnego pliku — fallback dla braku JS, middle-click i „kopiuj link”", () => {
@@ -117,6 +131,9 @@ describe("DownloadButton", () => {
         label="Pobierz plik"
         ariaLabel="Pobierz plik: Cennik usług"
         className="link"
+        errorMessage="Nie udało się pobrać pliku."
+        errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 

@@ -87,6 +87,7 @@ export default async function DownloadsPage({ params, searchParams }: DownloadsP
       <DownloadList
         downloads={result.results}
         downloadLabel={dict.downloadLabel}
+        downloadErrorMessage={dict.downloadError}
         emptyMessage={dict.empty}
       />
       <Pagination

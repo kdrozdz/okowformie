@@ -1,5 +1,6 @@
 """Lista w panelu: brakujące i nieopublikowane tłumaczenia muszą być widoczne."""
 
+import re
 from collections.abc import Callable
 from typing import Any
 
@@ -166,6 +167,53 @@ def test_lista_postow_otwiera_sie(
     content = response.content.decode()
     assert "brak wersji" in content
     assert "Kompletność tłumaczeń" in content
+
+
+def _change_link_pks(content: str) -> list[str]:
+    """Liczba faktycznych wierszy na liście — po linkach `.../post/{pk}/change/`,
+    nie po wystąpieniach tytułu (który Django renderuje dwa razy na wiersz:
+    w `aria-label`/tooltipie checkboksa i w tekście linku). Ten sam wzorzec co
+    `downloads.tests.test_admin._change_link_pks`."""
+    return re.findall(r"/post/(\d+)/change/", content)
+
+
+def test_filtr_statusu_nie_duplikuje_posta_z_dwoma_tlumaczeniami(
+    client: Any, author: Any, settings: Any, published_post: Post
+) -> None:
+    """`list_filter = (..., "translations__status", ...)` robi JOIN na
+    `translations` — bez `PostAdmin.get_queryset().distinct()` post z dwoma
+    opublikowanymi tłumaczeniami (PL+EN) pojawiłby się na liście dwa razy.
+    Regresja zgłoszona w `/code-review` i opisana w `docs/todo/TODO.md`."""
+    author.is_staff = True
+    author.is_superuser = True
+    author.save()
+    client.force_login(author)
+
+    response = client.get(
+        f"/{settings.ADMIN_URL}blog/post/?translations__status=published"
+    )
+
+    assert response.status_code == 200
+    assert _change_link_pks(response.content.decode()) == [str(published_post.pk)]
+
+
+def test_sortowanie_po_tytule_nie_duplikuje_posta_z_dwoma_tlumaczeniami(
+    client: Any, author: Any, settings: Any, published_post: Post
+) -> None:
+    """`admin_title` celowo nie ma `ordering="translations__title"` (patrz
+    docstring w `blog/admin.py`) — `?o=1` (próba sortowania po tej
+    kolumnie, pierwszej w `list_display`) nie ma więc efektu i nie
+    duplikuje wierszy. Ten sam test co
+    `downloads.tests.test_admin.test_sortowanie_po_nazwie_nie_duplikuje_pliku_z_dwoma_tlumaczeniami`."""
+    author.is_staff = True
+    author.is_superuser = True
+    author.save()
+    client.force_login(author)
+
+    response = client.get(f"/{settings.ADMIN_URL}blog/post/?o=1")
+
+    assert response.status_code == 200
+    assert _change_link_pks(response.content.decode()) == [str(published_post.pk)]
 
 
 def test_dodanie_posta_bez_wybrania_autora_ustawia_zalogowanego_uzytkownika(

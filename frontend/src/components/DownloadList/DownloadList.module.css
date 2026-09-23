@@ -43,8 +43,15 @@
   color: var(--ink);
 }
 
-.downloadLink {
+.downloadWrapper {
   align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.downloadLink {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -63,11 +70,21 @@
   opacity: 0.85;
 }
 
+.downloadError {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: #b42318;
+}
+
 @media (min-width: 768px) {
   .card {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+  }
+
+  .downloadWrapper {
+    align-items: flex-end;
   }
 }

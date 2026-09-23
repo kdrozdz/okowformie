@@ -195,9 +195,21 @@ class PostAdmin(TranslatableAdmin):
 
         Bez tego każda kolumna statusu odpytywałaby bazę per wiersz — przy
         50 postach na stronie to 100 zapytań (`.claude/rules/performance.md`).
+
+        `.distinct()` jest tu konieczne, nie kosmetyczne: `list_filter`
+        (`translations__status`) robi JOIN na `translations` — bez
+        `.distinct()` post z dwoma tłumaczeniami (PL+EN) pasującymi do
+        filtra pojawia się na liście dwa razy. Ten sam wzorzec naprawy co
+        `downloads.admin.DownloadAdmin.get_queryset` — patrz tam po pełne
+        wyjaśnienie (empirycznie zweryfikowane przy `docs/tasks/16-pliki-do-pobrania.md`,
+        znalezisko przeniesione do `blog` w `docs/todo/TODO.md`).
         """
         return (
-            super().get_queryset(request).select_related("author").prefetch_related("translations")
+            super()
+            .get_queryset(request)
+            .select_related("author")
+            .prefetch_related("translations")
+            .distinct()
         )
 
     def save_model(self, request: HttpRequest, obj: Post, form: Any, change: bool) -> None:
@@ -216,8 +228,20 @@ class PostAdmin(TranslatableAdmin):
 
     # --- Kolumny listy --------------------------------------------------
 
-    @admin.display(description="Tytuł", ordering="translations__title")
+    @admin.display(description="Tytuł")
     def admin_title(self, obj: Post) -> str:
+        """Bez `ordering="translations__title"` — celowo, tak jak
+        `downloads.admin.DownloadAdmin.admin_title`. `.distinct()` w
+        `get_queryset()` naprawia duplikaty z JOIN-a przy filtrowaniu, ale
+        nie przy sortowaniu po kolumnie z JOIN-a: Postgres wymaga, żeby
+        `SELECT DISTINCT` zawierał w SELECT każdą kolumnę z `ORDER BY`, więc
+        `title` z dwóch różnych tłumaczeń tego samego posta robi z
+        (`id`, `title`) dwie różne „distinct" krotki — post z dwoma
+        tłumaczeniami nadal pojawiałby się na liście dwa razy po kliknięciu
+        nagłówka kolumny. Lista ma kanoniczne sortowanie po `-created_at`
+        (`Meta.ordering`/`ordering` w tej klasie) — klikalne sortowanie
+        alfabetyczne po tytule nie było wymaganiem.
+        """
         return obj.safe_translation_getter("title", any_language=True) or "(bez tytułu)"
 
     @admin.display(description="Data publikacji (PL)")
