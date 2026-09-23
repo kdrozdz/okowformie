@@ -1,7 +1,7 @@
 # 16 — Pliki do pobrania (nowa pozycja menu + panel + publiczne API + frontend)
 
 - **Cel:** Nowa pozycja menu „Do pobrania" — lista plików (na start: PDF) zarządzana w panelu redakcyjnym (dodawanie, sortowanie, zmiana widoczności `draft`/`published`/`archived`, trwałe usunięcie), wystawiona publicznym API i wyrenderowana na froncie. Nowa domenowa aplikacja `downloads`. Storage lokalny (wolumen) teraz, przez abstrakcję Django `STORAGES` — przejście na S3 w przyszłości bez zmian w modelu (otwarta decyzja w `CLAUDE.md`, `scope.md`).
-- **Status:** gotowe — implementacja, review `qa-agent`, `/code-review`, naprawa wszystkich znalezisk i dwa dodatkowe poprawki po ręcznym sprawdzeniu przez użytkownika (link pobierania cross-origin, sticky footer) zakończone, `/check` zielone. Nic nie jest jeszcze zmergowane do `main`.
+- **Status:** gotowe, zmergowane do `main` (commit `9eafd04`).
 
 ## Decyzje wejściowe (z brainstormingu)
 
@@ -23,6 +23,8 @@
 - [x] naprawa znalezisk z review qa-agent.
 - [x] `/check` — zielone.
 - [x] `/code-review` (poziom medium) — znaleziska naprawione.
+- [x] Ręczne sprawdzenie przez użytkownika — 2 zgłoszenia naprawione (link pobierania cross-origin, sticky footer).
+- [x] Merge do `main`.
 
 ## Poza zakresem tego taska
 
