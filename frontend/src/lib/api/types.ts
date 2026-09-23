@@ -55,6 +55,16 @@ export interface PostDetail extends PostSummary {
   available_translations: PostTranslationRef[];
 }
 
+/** `downloads.serializers.DownloadListSerializer`, `GET /api/v1/{lang}/downloads/`. */
+export interface Download {
+  title: string;
+  /** Zwykły tekst (`TextField`), NIE HTML — nigdy `dangerouslySetInnerHTML`. Może być pusty. */
+  description: string;
+  /** Zawsze absolutny URL — w przeciwieństwie do opcjonalnych obrazów `file` jest wymagane na poziomie modelu. */
+  file: string;
+  order: number;
+}
+
 export interface PaginatedResponse<T> {
   count: number;
   next: string | null;

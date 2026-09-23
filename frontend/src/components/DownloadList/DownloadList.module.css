@@ -1,0 +1,73 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.empty {
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.9rem 1rem 0.9rem 1.1rem;
+  border-left: 3px solid transparent;
+  border-image: var(--accent-gradient) 1;
+  border-radius: 0 10px 10px 0;
+  background: var(--surface);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0 0 0.4rem;
+}
+
+.description {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.downloadLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+  color: var(--surface);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.downloadLink:hover,
+.downloadLink:focus-visible {
+  opacity: 0.85;
+}
+
+@media (min-width: 768px) {
+  .card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+}
