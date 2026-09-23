@@ -94,7 +94,7 @@ Znaleziska z audytu obecnego kodu (do naprawy w kroku backend-agenta niżej):
       `UserAdmin`) pod kątem brakujących, realnie użytecznych filtrów/
       `search_fields` — lista konkretnych rekomendacji do wdrożenia w
       kroku backend-agenta.
-- [ ] **backend-agent** — implementacja wg spec:
+- [x] **backend-agent** — implementacja wg spec:
   - `admin.site.site_header` / `site_title` / `index_title` — branding
     okowFormie, jedno miejsce (`backend/src/backend/admin.py` lub `apps.py`
     → `ready()`).
@@ -121,7 +121,7 @@ Znaleziska z audytu obecnego kodu (do naprawy w kroku backend-agenta niżej):
     użytkownika w `PostAdmin.search_fields`, jeśli spec to potwierdzi) —
     bez dodawania filtrów „na wszelki wypadek" tam, gdzie lista i tak ma
     kilka wierszy (singletony `about`/`branding`/`ai_content` bez zmian).
-- [ ] **qa-agent** — testy: render strony głównej panelu (kategorie w
+- [x] **qa-agent** — testy: render strony głównej panelu (kategorie w
       oczekiwanej kolejności/nazwach, każda apka widoczna w swojej grupie),
       render `base_site.html` (logo, `site_header` w treści odpowiedzi),
       regresja istniejących `test_admin.py` (about/blog/branding/ai_content)
@@ -246,3 +246,248 @@ Reszta (`TranslationCompletenessFilter`, `translations__status`, `author`,
 `created_at`, `date_hierarchy`) już wystarczająca, bez zmian. Stockowy
 `UserAdmin` (accounts) — domyślne filtry/`search_fields` Django już
 wystarczające, bez zmian.
+
+### Implementacja (krok 2 planu, backend-agent)
+
+**Gdzie wylądował `AdminSite`/branding:**
+- `backend/src/backend/admin.py` (nowy plik) — `admin.site.site_header` /
+  `site_title` / `index_title`, plus `OkowformieAdminSite(admin.AdminSite)`
+  z nadpisanym `get_app_list`. Przypisany na już istniejący singleton
+  (`admin.site.__class__ = OkowformieAdminSite`), **nie** nowa instancja —
+  każda domenowa apka rejestruje modele przez `@admin.register` na tym
+  jednym, globalnym `admin.site`; nowa instancja zerowałaby rejestr, gdyby
+  ten moduł zaimportował się po tamtych rejestracjach (kolejność importu
+  apek w drugą stronę nie jest gwarantowana).
+- `get_app_list` woła `self._build_app_dict(request, app_label)` (metoda
+  Django) i tylko przekłada już przefiltrowany wynik (uprawnienia per
+  model już rozstrzygnięte przez `has_module_permission`/
+  `get_model_perms`) na kategorie ze specu — nigdy nie odpytuje ORM-u ani
+  rejestru adminów od nowa. Zweryfikowane manualnie (Django test client,
+  `docker compose exec backend`): superuser widzi kategorie w kolejności
+  Treść/Branding/Konfiguracja AI/Konta; staff z samymi uprawnieniami
+  `blog.*` widzi tylko „Treść” i „Konfiguracja AI” (bo `PostGeneratorAdmin.
+  has_module_permission` już dziś opiera się na `blog.add_post`+
+  `blog.change_post`, nie na uprawnieniach `ai_content` — to jest istniejące
+  zachowanie z `ai_content/admin.py`, nie coś wprowadzonego tym taskiem);
+  `AIProviderSettings` w tym przypadku poprawnie niewidoczny.
+- `admin.site.get_app_list` wpływa też na sidebar nawigacji widoczny na
+  **każdej** stronie panelu (`AdminSite.each_context` woła `get_app_list`
+  bez `app_label`, wynik idzie do `admin/nav_sidebar.html`), nie tylko na
+  stronę główną — to ten sam mechanizm Django, nie da się rozdzielić bez
+  duplikowania logiki grupowania. Uznane za pozytywny efekt uboczny
+  (konsekwentne grupowanie w całym panelu), nie regresję.
+- `backend/src/backend/urls.py` importuje `backend.admin` jawnie (linia
+  obok `admin.site.urls`) — `django.contrib.admin`'s `autodiscover()`
+  znalazłby ten plik sam (każda apka w `INSTALLED_APPS` z `admin.py` jest
+  automatycznie importowana), import jest tu tylko dla czytelności/
+  odkrywalności zależności bez znajomości tego mechanizmu Django.
+
+**Gdzie jest CSS/logo:**
+- `backend/src/backend/static/admin/img/logo.png` — kopia
+  `frontend/public/brand/logo.png` (plik ma rozszerzenie `.png`, ale to w
+  rzeczywistości dane JPEG — tak samo jak w źródle we `frontend`; nie
+  naprawiane w tym tasku, poza zakresem).
+- `backend/src/backend/static/admin/css/okowformie-admin.css` — zmienne z
+  tabeli wyżej, plus dwa doprecyzowania nieopisane w tabeli kolorów (patrz
+  „Odstępstwa” niżej).
+- `backend/src/backend/templates/admin/base_site.html` — nadpisuje blok
+  `branding` (logo + `site_header`, ten sam blok renderuje się też na
+  `/login/`) i `extrastyle` (dołącza CSS przez `{% static %}` +
+  `{% csp_nonce_attr %}`, ten sam wzorzec co pliki CSS Django). Znaleziony
+  automatycznie przez `APP_DIRS` (apka `backend` jest pierwsza w
+  `INSTALLED_APPS`, przed `django.contrib.admin`) i przez
+  `AppDirectoriesFinder` dla statyków — bez zmian w `TEMPLATES`/
+  `STATICFILES_FINDERS` w `settings.py`. Potwierdzone: `collectstatic
+  --dry-run -v2` widzi oba nowe pliki statyczne.
+
+**Odstępstwa od specu (z uzasadnieniem):**
+1. **`html[data-theme="dark"]` dopisany obok `:root`.** Spec mówił
+   "bezwarunkowy `:root`, bez `@media (prefers-color-scheme: dark)`" — to
+   wystarcza na automatyczny dark mode systemu, ale Django 6.1 ma
+   DRUGI mechanizm dark mode: ręczny przełącznik w headerze
+   (`admin/color_theme_toggle.html`), który ustawia atrybut
+   `data-theme="dark"` na `<html>`. Ten selektor ma WYŻSZĄ specyficzność
+   niż plain `:root` (atrybut na elemencie vs. pseudo-klasa), więc
+   wygrałby z naszym nadpisaniem niezależnie od kolejności w źródle. Bez
+   dopisania tego selektora "dark mode wyłączony" byłoby prawdą tylko dla
+   automatycznego dark mode, nie dla ręcznego przełącznika — dopisany,
+   żeby zrealizować literalną intencję specu, nie tylko jego dosłowne
+   brzmienie o `:root`.
+2. **Dodatkowa reguła `#site-name a:link, a:visited { color:
+   var(--header-branding-color); }`.** Tabela kolorów specu mówi
+   `--header-branding-color: #ffffff`, ale `admin/css/base.css` koloruje
+   link nagłówka wprost z `var(--accent)` (żółty), nie z
+   `--header-branding-color` — bez tej dodatkowej reguły tekst
+   "okowFormie — Panel redakcyjny" zostałby żółty na granatowym tle,
+   wbrew uzasadnieniu specu ("biały tekst na navy → 13.7:1"). Świadomie
+   NIE nadpisany `--accent` samodzielnie: ten token steruje też tłem
+   nagłówka kalendarza w widgecie daty (`admin/css/widgets.css`) ze stałym
+   ciemnym tekstem (`#333`) — podmiana `--accent` na indygo dałaby tam
+   nowy problem kontrastu, poza zakresem tego taska.
+3. **`Certificate.issuer` help_text wymagał migracji.** `help_text` jest
+   częścią `deconstruct()` pola Django — `makemigrations` wykrywa zmianę i
+   generuje `AlterField` (`about/migrations/0002_alter_certificate_issuer.py`).
+   Migracja jest metadanych: nie zmienia typu/ograniczeń kolumny w
+   Postgresie, w pełni odwracalna, bez migracji danych — zgodna z
+   „Migracje małe i odwracalne” (`.claude/rules/conventions.md`), nie
+   wymaga zatrzymania się i pytania z `engineering-principles.md` (to
+   dotyczy migracji **wymagającej migracji danych**, nie tej). Zastosowana
+   lokalnie (`manage.py migrate about`).
+
+**Znalezisko poza zakresem (dopisane do `docs/todo/TODO.md`):** repo ma
+pre-existing rozjazd między `ruff check` (czysty) i `ruff format --check`
+(8 plików niesformatowanych kanonicznie wg aktualnej wersji `ruff`,
+niezwiązanych z tym taskiem: `about/admin.py`, `about/tests/test_models.py`,
+`ai_content/admin.py`, `ai_content/models.py`,
+`backend/management/commands/seed_demo_data.py`, `branding/admin.py`,
+`core/tests/test_api.py`) — nienaprawiane tutaj (poza zakresem, dotyczy
+całych plików, nie linii zmienionych tym taskiem).
+
+**Weryfikacja:** `ruff check .` czysty, `mypy src` czysty (122 plików),
+`manage.py check` czysty, `makemigrations --check --dry-run` czysty (po
+wygenerowaniu migracji wyżej), `pytest` — 276 passed (uwaga: uruchamiane
+przez `docker compose exec backend`, bo lokalny Postgres/Redis nie są
+wystawione na hosta — `docker-compose.yml` — z jawnym
+`OTEL_METRICS_ENABLED=False` w `exec`, bo długo działający kontener
+`backend` ma tę zmienną `True` z `docker-compose.yml`, co fałszywie wywala
+dwa niezwiązane testy telemetrii przy odpalaniu przez `exec` na już
+działającym kontenerze). Testy jednostkowe dla `get_app_list`/grupowania
+strony głównej pozostają w zakresie kroku **qa-agent** (plan wyżej) — ten
+krok zweryfikował zachowanie manualnie (Django test client, opisane wyżej)
+jako dowód przed oddaniem, nie jako zamiennik automatycznego testu.
+
+### Testy (krok 3 planu, qa-agent)
+
+**14 nowych testów**, żaden istniejący nie wymagał zmiany asercji (backend-agent
+nie zmieniał zachowania, na którym istniejące testy już się opierały) —
+`pytest` 276 → **290 passed**. `ruff check .` czysty, `mypy src` czysty (123
+plików — +1 nowy plik testowy), `manage.py check` czysty, `makemigrations
+--check --dry-run` czysty. Wszystko uruchamiane przez `docker compose exec
+-e OTEL_METRICS_ENABLED=False backend uv run ...` (kontener już działał z
+`docker compose up -d` z poprzedniej sesji).
+
+- `backend/src/backend/tests/test_admin_site.py` (nowy, 7 testów) —
+  `OkowformieAdminSite.get_app_list`: kolejność i skład kategorii dla
+  superusera; **dwa** scenariusze filtrowania per uprawnienia (staff z samym
+  `blog.add_post`+`blog.change_post` widzi tylko „Treść”+„Konfiguracja AI”,
+  bez `AboutMe`/`AIProviderSettings`; staff z samym `accounts.view_user`
+  widzi wyłącznie „Konta” — dwa różne przekroje uprawnień, nie tylko jeden,
+  żeby dowieść, że filtrowanie nie jest przypadkowe dla jednej apki); staff
+  bez żadnych uprawnień widzi listę pustą (nie samą płaską, nieprzefiltrowaną
+  listę). Plus render: strona logowania i strona główna mają `site_header`,
+  link do `okowformie-admin.css` i `admin/img/logo.png` w treści odpowiedzi.
+- `blog/tests/test_admin.py` — `search_fields` z `author__username`: post
+  wyszukany fragmentem nazwy autora (`"aktork"` z `"redaktorka"`) jest na
+  liście, post innego autora (`"maria-nowak"`, celowo bez współdzielonego
+  podciągu z `"redaktorka"`) nie jest — dowód zawężenia wyniku, nie tylko
+  obecności w konfiguracji.
+- `about/tests/test_models.py` — `Certificate.issuer` ma niepusty `help_text`.
+- `ai_content/tests/test_forms.py` (+2) — `topic`/`local_focus` mają niepusty
+  `help_text`; `topic` ma `TextInput(size=60)`.
+- `blog/tests/test_admin_form.py`, `about/tests/test_admin_form.py` (+1
+  każdy) — `meta_title`/`meta_description` mają powiększone widgety
+  (`size=80`/`rows=3`) w obu formularzach.
+- `ai_content/tests/test_admin.py` (+1) — `extra_instructions` ma
+  `Textarea(rows=8)` przez `AIProviderSettingsAdmin.get_form()`.
+
+**Znalezisko poza zakresem (dopisane do `docs/todo/TODO.md`):**
+`{% csp_nonce_attr %}` w `base_site.html:20` (Django 6.1 wbudowany tag CSP)
+renderuje zawsze pusty string — `settings.py` nie ma ani
+`ContentSecurityPolicyMiddleware`, ani `SECURE_CSP`, więc w kontekście
+requestu nigdy nie ma nonce'u do wstawienia. Nie regresja tego taska
+(backend-agent nie dotykał `settings.py`, a użycie tagu jest poprawnym
+wzorcem "gdyby CSP kiedyś włączono") — pre-existing gap względem
+`.claude/rules/security.md` (CSP wymagane jako nagłówek bezpieczeństwa),
+tylko zauważony przy tym review. Nienaprawiane tutaj — poza zakresem
+qa-agenta (edytuje wyłącznie katalogi testów) i poza zakresem tego taska.
+
+**Żadnego innego defektu w kodzie backend-agenta nie znaleziono** — logika
+`get_app_list` (filtrowanie przez `_build_app_dict`, bez ponownego
+odpytywania rejestru/ORM-u), przypisanie `admin.site.__class__` na singleton,
+oba odstępstwa od specu CSS (`data-theme="dark"`, `#site-name a` kolor) są
+uzasadnione i zweryfikowane działają zgodnie z opisem. Werdykt: **GO** —
+`/code-review` (medium) po tym kroku również bez znalezisk.
+
+### Defekt zgłoszony przez użytkownika po `/check`+`/code-review`: "białe kolory się nakładają"
+
+Zgłoszenie przyszło **po** zielonym `/check` i czystym `/code-review` —
+żaden z automatycznych testów (`qa-agent`) tego nie wychwycił, bo problem
+ujawnia się tylko pod konkretnym stanem przeglądarki/systemu (dark mode),
+którego żaden test nie symulował.
+
+**Diagnoza (zweryfikowana w kodzie Django, nie zgadywana):**
+`admin/css/dark_mode.css` Django definiuje **pełny** zestaw zmiennych CSS na
+dark mode (`--body-fg`, `--breadcrumbs-*`, `--primary-fg`, `--darkened-bg`
+itd.) w dwóch miejscach: `@media (prefers-color-scheme: dark) { :root {...} }`
+(automatyczny, wg systemu) i `html[data-theme="dark"] { ... }` (ręczny
+przełącznik w headerze). `okowformie-admin.css` (pierwsza wersja)
+nadpisywał tylko **część** tych zmiennych (`--header-bg`, `--body-bg`,
+`--link-fg`... — patrz tabela wyżej), nie `--body-fg`. Efekt: przy
+systemowym dark mode **albo** ręcznym przełączniku, `--body-fg` zostawał
+jasny (`#eeeeee`, z `dark_mode.css`) a `--body-bg` **też** jasny (`#f4f3fa`,
+z naszego pliku) — jasny tekst na jasnym tle, dokładnie zgłoszony objaw.
+Odstępstwo #1 z sekcji wyżej (`html[data-theme="dark"]` dopisany obok
+`:root`) rozwiązywało tylko **specyficzność wygrywającego selektora**, nie
+**kompletność** listy nadpisywanych zmiennych — literalnie zrealizowany
+spec ("dark mode wyłączony"), ale niekompletnie, bo enumerowanie każdej
+zmiennej Django do nadpisania jest z natury kruche (nowa wersja Django może
+dodać kolejne).
+
+**Naprawa (bardziej odporna, nie łatanie kolejnych zmiennych):**
+Całkowite usunięcie mechanizmu dark mode Django z HTML, nie tylko
+nadpisanie jego zmiennych:
+- `admin/base_site.html` — nowy `{% block dark-mode-vars %}{% endblock %}`
+  (pusty) usuwa `<link admin/css/dark_mode.css>` i
+  `<script admin/js/theme.js>` z `<head>` — te zmienne CSS nigdy nie
+  powstają, niezależnie od systemu użytkownika.
+- `admin/color_theme_toggle.html` (nowy plik, nadpisanie na pusty) — usuwa
+  przycisk przełącznika z headera (dla zalogowanych) i ze strony logowania;
+  bez `theme.js` byłby niefunkcjonalnym przyciskiem.
+- Efekt: `data-theme` nigdy nie jest ustawiane przez nic w tym panelu, więc
+  odstępstwo #1 (`html[data-theme="dark"]` w CSS) stało się zbędne —
+  usunięte, `okowformie-admin.css` wraca do plain `:root { ... }`.
+- **Defekt wtórny znaleziony przy naprawie**: pierwsza wersja obu nowych
+  szablonów użyła wielolinijkowego komentarza Django `{# ... #}` — w tej
+  wersji Django (6.1) taka składnia **nie** jest parsowana jako komentarz i
+  renderuje się jako zwykły tekst w HTML (potwierdzone: tekst komentarza z
+  `color_theme_toggle.html` pojawiał się w treści strony, obok przycisku
+  "Wyloguj się"). Naprawione na `{% comment %}...{% endcomment %}`
+  (dokumentowana, wieloliniowa składnia Django) w obu plikach.
+- **Test regresji dopisany** (`backend/tests/test_admin_site.py`, +2):
+  `test_strona_logowania_nie_laduje_dark_mode_django` /
+  `test_strona_glowna_panelu_nie_laduje_dark_mode_django` — asercja, że
+  `dark_mode.css`/`theme.js`/`theme-toggle` nie występują w treści
+  odpowiedzi, na obu stronach.
+
+**Weryfikacja po naprawie:** `ruff check .` czysty, `mypy src` czysty,
+`pytest` **292 passed** (290 + 2 nowe testy regresji), `manage.py check`
+czysty. Zweryfikowane też bezpośrednio (Django test client): strona
+logowania nie zawiera `dark_mode.css`/`theme.js`/`theme-toggle`, zawiera
+`okowformie-admin.css`/logo/`site_header`.
+
+Do zamknięcia taska pozostaje: potwierdzenie **wizualne** przez użytkownika
+w rzeczywistej przeglądarce (brak dostępu do przeglądarki w tym
+środowisku), zwłaszcza że pierwotne zgłoszenie było wizualne, nie z testu
+automatycznego.
+
+### Drugie zgłoszenie użytkownika (po naprawie dark mode): "wszystko się zlewa"
+
+Po naprawie dark mode użytkownik zgłosił kolejny wizualny problem: pola
+formularza nie odznaczają się od tła. Diagnoza w kodzie (bez zgadywania):
+`--border-color` (obramowanie `<input>`/`<textarea>`/`<select>`,
+`admin/css/forms.css`) i `--hairline-color` (linie działowe w `.module`,
+`admin/css/base.css`) w pierwszej wersji `okowformie-admin.css` miały tę
+samą wartość co `--body-bg` (`#e3e1f0` ≈ `#f4f3fa`, kontrast ~1:1) — pola
+formularza wizualnie zlewały się z tłem strony.
+
+**Naprawa:** `--border-color: #8a869c` (kontrast do `--body-bg` policzony
+programowo: **3.19:1**, przechodzi próg WCAG 1.4.11 dla granic elementów
+UI, ≥3:1), `--hairline-color: #c9c6da` (**1.51:1** — świadomie subtelniejsze,
+ten sam stosunek "border ciemniejszy niż hairline" co w domyślnym Django
+`#ccc`/`#e8e8e8`). Czysto CSS, zero zmian Pythona — `pytest` (podzbiór
+`backend/tests`) 12/12 bez zmian po edycji.
+
+Wciąż otwarte: wizualne potwierdzenie przez użytkownika w przeglądarce —
+oba zgłoszenia były wizualne, żaden automatyczny test w tym repo nie
+renderuje realnego CSS w przeglądarce (brak takiego narzędzia w tym
+środowisku).
