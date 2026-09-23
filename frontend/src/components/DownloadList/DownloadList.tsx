@@ -1,4 +1,5 @@
 import type { Download } from "@/lib/api/types";
+import { downloadFilename } from "@/lib/format/filename";
 
 import styles from "./DownloadList.module.css";
 
@@ -31,7 +32,12 @@ export function DownloadList({ downloads, downloadLabel, emptyMessage }: Downloa
               <p className={styles.description}>{download.description}</p>
             ) : null}
           </div>
-          <a href={download.file} download className={styles.downloadLink}>
+          <a
+            href={download.file}
+            download={downloadFilename(download.title, download.file)}
+            aria-label={`${downloadLabel}: ${download.title}`}
+            className={styles.downloadLink}
+          >
             {downloadLabel}
           </a>
         </li>

@@ -299,3 +299,24 @@ override dla obserwowalności, jeśli to ma zostać włączone celowo).
 `docker-compose.yml:101`, `docs/tasks/16-pliki-do-pobrania.md` (znalezione
 przy weryfikacji `uv run pytest` przez `docker compose exec backend`).
 na branchu `12-generator-postow-ai`, `backend/Dockerfile` (`--workers 3`).
+
+## [otwarte] Brak twardego limitu rozmiaru requestu przed walidacją uploadu — dotyczy całego backendu, nie tylko `downloads` (2026-09-23)
+`backend/src/backend/settings.py` nie nadpisuje `DATA_UPLOAD_MAX_MEMORY_SIZE`/
+`FILE_UPLOAD_MAX_MEMORY_SIZE` (Django default 2.5 MB — pliki powyżej tego
+progu Django i tak spooluje na dysk, nie trzyma w całości w RAM, więc to nie
+jest niekontrolowany DoS pamięciowy), a `infra/` nie ma jeszcze configu nginx
+z `client_max_body_size`. `downloads.validators.validate_pdf_upload`
+(dodany w tasku 16) jest sam w sobie poprawny — kolejność sprawdzeń to
+rozszerzenie (tanie, bez I/O) → `value.size` (metadana) → magic bytes (czyta
+tylko pierwsze 5 bajtów) — ale ryzyko leży warstwę wyżej: przyjęcie requestu,
+zanim walidator w ogóle zostanie wywołany. Identyczna, pre-existing luka
+dotyczy już dziś uploadów `blog`/`about` (obrazy) — nie jest to regresja
+wprowadzona przez `downloads`, tylko wspólny gap całego stacku uploadu,
+dodatkowo ograniczony tym, że upload w panelu wymaga zalogowanego stafa (nie
+publiczny endpoint). Do zrobienia przy tasku deployu produkcyjnego/nginx na
+Cyberfolks VPS: jawny `client_max_body_size` w konfiguracji reverse proxy +
+rozważenie `DATA_UPLOAD_MAX_MEMORY_SIZE` w `settings.py`.
+
+**Kontekst:** znalezisko z review `qa-agent` na branchu `16-pliki-do-pobrania`,
+`backend/src/downloads/validators.py`, `backend/src/backend/settings.py`
+(brak `DATA_UPLOAD_MAX_MEMORY_SIZE`), `docs/tasks/16-pliki-do-pobrania.md`.

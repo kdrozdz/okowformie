@@ -1,7 +1,7 @@
 # 16 — Pliki do pobrania (nowa pozycja menu + panel + publiczne API + frontend)
 
 - **Cel:** Nowa pozycja menu „Do pobrania" — lista plików (na start: PDF) zarządzana w panelu redakcyjnym (dodawanie, sortowanie, zmiana widoczności `draft`/`published`/`archived`, trwałe usunięcie), wystawiona publicznym API i wyrenderowana na froncie. Nowa domenowa aplikacja `downloads`. Storage lokalny (wolumen) teraz, przez abstrakcję Django `STORAGES` — przejście na S3 w przyszłości bez zmian w modelu (otwarta decyzja w `CLAUDE.md`, `scope.md`).
-- **Status:** backend gotowy (modele, panel, publiczne API, testy, `/check` lokalnie zielone) — frontend, `qa-agent` i `/code-review` jeszcze do zrobienia.
+- **Status:** backend + frontend gotowe, review `qa-agent` zamknięte (GO, jedno znalezisko naprawione od razu) — zostało `/check` i `/code-review`.
 
 ## Decyzje wejściowe (z brainstormingu)
 
@@ -19,8 +19,8 @@
 - [x] backend-agent: publiczny endpoint `GET /api/v1/{lang}/downloads/?page=n` (`ListAPIView`, wzorzec `PostListView`) — tylko `published`, paginacja (domyślny `PAGE_SIZE`), throttling (osobny scope `downloads`), `Cache-Control`.
 - [x] backend-agent: rejestracja `downloads` w `INSTALLED_APPS`, `backend/urls.py`, throttle rate w `settings.py`.
 - [x] frontend-agent: link „Do pobrania" / „Downloads" w `PrimaryNav` + `dictionary.ts`, strona `/[lang]/do-pobrania` (RSC + fetch, ISR jak posty), `getDownloads(lang, page)` w `lib/api/client.ts` + typy w `lib/api/types.ts`.
-- [ ] qa-agent: niezależne review (regresje, bezpieczeństwo uploadu, testy, zgodność z rules).
-- [ ] naprawa znalezisk z review qa-agent.
+- [x] qa-agent: niezależne review (regresje, bezpieczeństwo uploadu, testy, zgodność z rules).
+- [x] naprawa znalezisk z review qa-agent.
 - [ ] `/check` — zielone.
 - [ ] `/code-review` (poziom medium) — znaleziska naprawione.
 
@@ -104,3 +104,15 @@ Weryfikacja wizualna: sprawdzone przez `curl` na żywym `docker compose` (`front
 - Link „Do pobrania”/„Downloads” obecny w menu na `/pl/do-pobrania`, `/pl/posty`, `/pl/o-mnie` (i analogicznie EN) — na stronie `/pl/do-pobrania` ma `aria-current="page"`.
 
 Nie sprawdzone: realny render z niepustą listą (brak danych testowych w bazie — plan backendu nie zakładał seed danych), stany 375/768/1440px w przeglądarce (brak dostępu do przeglądarki/MCP w tej sesji — CSS `DownloadList.module.css` napisany mobile-first z rozszerzeniem `min-width: 768px` analogicznie do `PostList.module.css`, ale nie zweryfikowany wizualnie na realnych szerokościach).
+
+## Wynik review qa-agent (2026-09-23)
+
+**Werdykt: GO, bez blokerów.** Niezależnie potwierdzone (nie tylko z raportów innych agentów): `ruff check` czysty, `mypy src` czysty, `pytest src/downloads` 32/32, `makemigrations --check` bez zmian, `npm run lint`/`typecheck` czyste, `npm test` 89/89. Sprawdzone bez zastrzeżeń: regresja `Pagination`/`basePath` (brak — identyczny wynikowy `href`), bezpieczeństwo uploadu (magic bytes faktycznie sprawdzane, kolejność sprawdzeń tania→droga), wyciek draftów (filtrowanie w querysecie, nie w serializerze), N+1/paginacja (testy realnie liczą zapytania), zakres faz (czysto), konwencje/typy, panel redakcyjny (`status_pl`/`status_en` pokazują braki tłumaczeń).
+
+**Znalezisko #1 (Medium, a11y) — naprawione od razu.** `DownloadList.tsx` — link pobierania miał identyczny, nierozróżnialny tekst dostępny ("Pobierz plik") na każdej pozycji listy; czytnik ekranu w trybie "lista linków" nie odróżniał, który plik pobiera dany link. Naprawa: `aria-label={\`${downloadLabel}: ${download.title}\`}` na `<a>`. Test `DownloadList.test.tsx` zaktualizowany (asercja po pełnym `aria-label`, nie po samym `downloadLabel`).
+
+**Znalezisko #2 (Low, UX) — naprawione przy okazji.** Pobrany plik dostawał losową nazwę (`RandomFilenameUploadTo` generuje UUID na storage — świadoma, poprawna decyzja bezpieczeństwa, `.claude/rules/security.md`) zamiast czytelnej. Dodano `frontend/src/lib/format/filename.ts::downloadFilename(title, fileUrl)` — slugifikuje tytuł (z jawną mapą polskich znaków specjalnych, bo NFKD nie rozkłada np. „ł"), doklejä rozszerzenie z realnego URL-a pliku. Użyty jako wartość atrybutu `download` w `DownloadList.tsx`. 5 nowych testów (`filename.test.ts`).
+
+**Znalezisko #3 (Low, poza zakresem brancha) — zgłoszone do `docs/todo/TODO.md`, nie naprawiane tu.** Brak twardego limitu rozmiaru requestu (`DATA_UPLOAD_MAX_MEMORY_SIZE`/nginx `client_max_body_size`) przed walidacją uploadu — dotyczy całego backendu (identyczna, pre-existing luka istnieje już dla `blog`/`about`), nie regresja tego taska. Szczegóły: `docs/todo/TODO.md`, wpis „Brak twardego limitu rozmiaru requestu przed walidacją uploadu”.
+
+Po naprawach: `npm run lint`/`typecheck` czyste, `npm test` → **17 plików testowych, 94 testy przeszły** (było 16/89, +1 plik `filename.test.ts` z 5 testami, `DownloadList.test.tsx` zaktualizowany bez zmiany liczby testów).
