@@ -43,8 +43,14 @@
   color: var(--ink);
 }
 
+.downloadWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
 .downloadLink {
-  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -75,5 +81,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+  }
+
+  .downloadWrapper {
+    align-items: flex-end;
   }
 }

@@ -42,6 +42,7 @@ describe("DownloadButton", () => {
         className="link"
         errorMessage="Nie udało się pobrać pliku."
         errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 
@@ -77,6 +78,7 @@ describe("DownloadButton", () => {
         className="link"
         errorMessage="Nie udało się pobrać pliku."
         errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 
@@ -106,6 +108,7 @@ describe("DownloadButton", () => {
         className="link"
         errorMessage="Nie udało się pobrać pliku."
         errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 
@@ -130,6 +133,7 @@ describe("DownloadButton", () => {
         className="link"
         errorMessage="Nie udało się pobrać pliku."
         errorClassName="error"
+        wrapperClassName="wrapper"
       />,
     );
 

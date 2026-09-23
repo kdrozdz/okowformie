@@ -197,6 +197,25 @@ def test_filtr_statusu_nie_duplikuje_posta_z_dwoma_tlumaczeniami(
     assert _change_link_pks(response.content.decode()) == [str(published_post.pk)]
 
 
+def test_sortowanie_po_tytule_nie_duplikuje_posta_z_dwoma_tlumaczeniami(
+    client: Any, author: Any, settings: Any, published_post: Post
+) -> None:
+    """`admin_title` celowo nie ma `ordering="translations__title"` (patrz
+    docstring w `blog/admin.py`) — `?o=1` (próba sortowania po tej
+    kolumnie, pierwszej w `list_display`) nie ma więc efektu i nie
+    duplikuje wierszy. Ten sam test co
+    `downloads.tests.test_admin.test_sortowanie_po_nazwie_nie_duplikuje_pliku_z_dwoma_tlumaczeniami`."""
+    author.is_staff = True
+    author.is_superuser = True
+    author.save()
+    client.force_login(author)
+
+    response = client.get(f"/{settings.ADMIN_URL}blog/post/?o=1")
+
+    assert response.status_code == 200
+    assert _change_link_pks(response.content.decode()) == [str(published_post.pk)]
+
+
 def test_dodanie_posta_bez_wybrania_autora_ustawia_zalogowanego_uzytkownika(
     client: Any, author: Any, settings: Any
 ) -> None:

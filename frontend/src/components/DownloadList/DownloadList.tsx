@@ -47,6 +47,7 @@ export function DownloadList({
             className={styles.downloadLink}
             errorMessage={downloadErrorMessage}
             errorClassName={styles.downloadError}
+            wrapperClassName={styles.downloadWrapper}
           />
         </li>
       ))}

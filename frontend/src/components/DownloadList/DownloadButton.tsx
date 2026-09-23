@@ -11,6 +11,15 @@ interface DownloadButtonProps {
   /** Komunikat pod linkiem, gdy fetch zawiedzie i zadziała fallback `window.open`. */
   errorMessage: string;
   errorClassName: string;
+  /**
+   * Klasa kontenera wokół linku i komunikatu błędu. Konieczna, żeby oba
+   * razem pozostały JEDNYM flex-itemem karty w `DownloadList` — bez tego
+   * kontenera Fragment renderuje `<a>` i `<p role="alert">` jako dwa
+   * osobne dzieci `.card`, co przy `justify-content: space-between` na
+   * desktopie rozjeżdża przycisk i komunikat błędu po przeciwnych
+   * krawędziach karty (znalezisko z review `qa-agent`).
+   */
+  wrapperClassName: string;
 }
 
 /**
@@ -37,6 +46,7 @@ export function DownloadButton({
   className,
   errorMessage,
   errorClassName,
+  wrapperClassName,
 }: DownloadButtonProps) {
   const isDownloadingRef = useRef(false);
   const [hasError, setHasError] = useState(false);
@@ -80,7 +90,7 @@ export function DownloadButton({
   }
 
   return (
-    <>
+    <div className={wrapperClassName}>
       <a href={fileUrl} onClick={handleClick} aria-label={ariaLabel} className={className}>
         {label}
       </a>
@@ -89,6 +99,6 @@ export function DownloadButton({
           {errorMessage}
         </p>
       ) : null}
-    </>
+    </div>
   );
 }
