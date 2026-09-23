@@ -43,13 +43,38 @@ class DownloadAdmin(TranslatableAdmin):
         """Jedno zapytanie na wszystkie tłumaczenia, nie jedno na wiersz —
         analogiczne do `blog.admin.PostAdmin.get_queryset`
         (`.claude/rules/performance.md`).
+
+        `.distinct()` jest tu konieczne, nie kosmetyczne: `list_filter`
+        (`translations__status`) i sortowanie po kolumnie „Nazwa”
+        (`ordering="translations__title"` w `admin_title`) robią JOIN na
+        `translations` — bez `.distinct()` plik z dwoma tłumaczeniami (PL+EN)
+        pasującymi do filtra/sortowania pojawia się na liście dwa razy
+        (zweryfikowane empirycznie: `qs.filter(translations__status=...)`
+        zwraca ten sam `pk` dwa razy). Django admin dodaje `.distinct()`
+        automatycznie tylko dla JOIN-ów z `search_fields`, nie z
+        `list_filter`/`ordering`.
         """
-        return super().get_queryset(request).prefetch_related("translations")
+        return super().get_queryset(request).prefetch_related("translations").distinct()
 
     # --- Kolumny listy --------------------------------------------------
 
-    @admin.display(description="Nazwa", ordering="translations__title")
+    @admin.display(description="Nazwa")
     def admin_title(self, obj: Download) -> str:
+        """Bez `ordering="translations__title"` (w przeciwieństwie do
+        `blog.admin.PostAdmin.admin_title`) — celowo. `.distinct()` w
+        `get_queryset()` wyżej naprawia duplikaty wynikające z JOIN-a przy
+        filtrowaniu (`list_filter`), ale **nie** przy sortowaniu po kolumnie z
+        JOIN-a: Postgres wymaga, żeby `SELECT DISTINCT` zawierał w SELECT
+        każdą kolumnę użytą w `ORDER BY`, więc `title` z dwóch różnych
+        tłumaczeń tego samego pliku robi z (`id`, `title`) dwie różne,
+        „distinct” krotki — plik z dwoma tłumaczeniami nadal pojawiłby się na
+        liście dwa razy po kliknięciu nagłówka kolumny (zweryfikowane
+        empirycznie: `?o=1` dawał dwa wiersze dla tego samego `pk`, mimo
+        `.distinct()`). Lista i tak ma kanoniczne, kuratorowane sortowanie po
+        polu `order` (`Meta.ordering`) — klikalne sortowanie alfabetyczne po
+        nazwie nie było wymaganiem, więc usunięcie go jest prostszą naprawą
+        niż subquery/annotate zamiast surowego JOIN-a.
+        """
         return obj.safe_translation_getter("title", any_language=True) or "(bez nazwy)"
 
     @admin.display(description="polski")

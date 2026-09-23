@@ -1,7 +1,7 @@
 # 16 — Pliki do pobrania (nowa pozycja menu + panel + publiczne API + frontend)
 
 - **Cel:** Nowa pozycja menu „Do pobrania" — lista plików (na start: PDF) zarządzana w panelu redakcyjnym (dodawanie, sortowanie, zmiana widoczności `draft`/`published`/`archived`, trwałe usunięcie), wystawiona publicznym API i wyrenderowana na froncie. Nowa domenowa aplikacja `downloads`. Storage lokalny (wolumen) teraz, przez abstrakcję Django `STORAGES` — przejście na S3 w przyszłości bez zmian w modelu (otwarta decyzja w `CLAUDE.md`, `scope.md`).
-- **Status:** backend + frontend gotowe, review `qa-agent` zamknięte (GO, jedno znalezisko naprawione od razu) — zostało `/check` i `/code-review`.
+- **Status:** gotowe — implementacja, review `qa-agent`, `/code-review` i naprawa wszystkich znalezisk zakończone, `/check` zielone. Nic nie jest jeszcze zmergowane do `main`.
 
 ## Decyzje wejściowe (z brainstormingu)
 
@@ -21,8 +21,8 @@
 - [x] frontend-agent: link „Do pobrania" / „Downloads" w `PrimaryNav` + `dictionary.ts`, strona `/[lang]/do-pobrania` (RSC + fetch, ISR jak posty), `getDownloads(lang, page)` w `lib/api/client.ts` + typy w `lib/api/types.ts`.
 - [x] qa-agent: niezależne review (regresje, bezpieczeństwo uploadu, testy, zgodność z rules).
 - [x] naprawa znalezisk z review qa-agent.
-- [ ] `/check` — zielone.
-- [ ] `/code-review` (poziom medium) — znaleziska naprawione.
+- [x] `/check` — zielone.
+- [x] `/code-review` (poziom medium) — znaleziska naprawione.
 
 ## Poza zakresem tego taska
 
@@ -116,3 +116,34 @@ Nie sprawdzone: realny render z niepustą listą (brak danych testowych w bazie 
 **Znalezisko #3 (Low, poza zakresem brancha) — zgłoszone do `docs/todo/TODO.md`, nie naprawiane tu.** Brak twardego limitu rozmiaru requestu (`DATA_UPLOAD_MAX_MEMORY_SIZE`/nginx `client_max_body_size`) przed walidacją uploadu — dotyczy całego backendu (identyczna, pre-existing luka istnieje już dla `blog`/`about`), nie regresja tego taska. Szczegóły: `docs/todo/TODO.md`, wpis „Brak twardego limitu rozmiaru requestu przed walidacją uploadu”.
 
 Po naprawach: `npm run lint`/`typecheck` czyste, `npm test` → **17 plików testowych, 94 testy przeszły** (było 16/89, +1 plik `filename.test.ts` z 5 testami, `DownloadList.test.tsx` zaktualizowany bez zmiany liczby testów).
+
+## Wynik `/check` (2026-09-23, po review qa-agent)
+
+Backend (`docker compose exec -T [-e OTEL_METRICS_ENABLED=False] backend uv run ...`):
+- `ruff check .` → All checks passed!
+- `mypy src` → Success: no issues found in 142 source files
+- `python manage.py check` → System check identified no issues (2 silenced)
+- `python manage.py makemigrations --check --dry-run` → No changes detected
+- `pytest -q` → **325 passed** (0 failed — `OTEL_METRICS_ENABLED=False` obchodzi znany, niezwiązany z tym taskiem gap opisany w `docs/todo/TODO.md`)
+
+Frontend: `npm run lint`/`typecheck` czyste, `npm test` → **17 plików, 94 testy**.
+
+## Wynik `/code-review medium` (2026-09-23)
+
+8 równoległych kątów wyszukiwania (correctness ×3, reuse, simplification, efficiency, altitude, konwencje CLAUDE.md) na diffie ~2165 linii (`main..16-pliki-do-pobrania`). 7 znalezisk zwróconych, ranking wg wagi. Weryfikacja i decyzje:
+
+**#1 (najwyższa waga, potwierdzone empirycznie) — `DownloadAdmin` duplikował wiersze na liście przy filtrowaniu/sortowaniu po polu z relacji `translations`.** `list_filter = ("translations__status",)` i `admin_title(ordering="translations__title")` robią JOIN na `translations` — Django admin dodaje `.distinct()` automatycznie tylko dla JOIN-ów z `search_fields`, nie z `list_filter`/`ordering`. Zweryfikowane w shellu przed naprawą: plik z dwoma opublikowanymi tłumaczeniami (PL+EN) pojawiał się na liście dwa razy pod filtrem/sortowaniem.
+  - **Naprawa (`list_filter`):** `DownloadAdmin.get_queryset()` dostał `.distinct()` — w pełni wystarczające dla filtra.
+  - **Naprawa (sortowanie po kolumnie „Nazwa”):** `.distinct()` **nie** wystarczał — Postgres wymaga, żeby `SELECT DISTINCT` zawierał w SELECT każdą kolumnę z `ORDER BY`, więc `title` z dwóch tłumaczeń robi z `(id, title)` dwie różne „distinct” krotki (zweryfikowane: `?o=1` nadal dawał dwa wiersze dla tego samego `pk` mimo `.distinct()`). Usunięto `ordering="translations__title"` z `admin_title` — lista ma kanoniczne sortowanie po polu `order` (`Meta.ordering`), klikalne sortowanie alfabetyczne po nazwie nie było wymaganiem.
+  - 2 nowe testy regresyjne w `downloads/tests/test_admin.py` (filtr, próba sortowania) — liczą faktyczne linki `.../change/`, nie wystąpienia tytułu w HTML-u (tytuł naturalnie występuje 2× na wiersz: w `aria`/tooltipie checkboksa i w tekście linku — pierwsza wersja testu błędnie zakładała 1×).
+  - **`blog.admin.PostAdmin` ma identyczny, pre-existing wzorzec** (zweryfikowane empirycznie: `Post.objects.filter(translations__status="published")` też zwraca duplikaty) — poza zakresem tego taska, zgłoszone do `docs/todo/TODO.md`.
+
+**#2–#4 (frontend, `filename.ts`) — naprawione jednym refaktorem.** `new URL(fileUrl)` rzucał `TypeError` na zdeformowanym/relatywnym URL-u (np. źle skonfigurowane `SITE_URL` bez schematu — `core.api.absolute_media_url` nie gwarantuje absolutności), zamieniając błąd konfiguracji w 500 całej strony zamiast zepsutego linku. Fallback dla tytułu bez znaków alfanumerycznych kolidował (każdy taki wpis dostawał `"plik.pdf"`). Brak fallbacku rozszerzenia, gdyby URL go nie miał. Przepisano `downloadFilename`, żeby operować wyłącznie na stringu (bez `new URL()`) i wyciągać rozszerzenie z **oryginalnej nazwy pliku na storage** (ostatni segment ścieżki) zamiast z parsowanego URL-a; fallback dla pustego slugu to ta oryginalna, losowa, ale unikalna nazwa — nie kolizyjna stała. 3 nowe testy (relatywny/zdeformowany URL, kolizja dwóch symbol-only tytułów, query/fragment w URL-u).
+
+**#5 (Low, DRY) — zgłoszone do `docs/todo/TODO.md`, nie naprawiane.** `downloadFilename` duplikuje regułę transliteracji polskich znaków z `backend/src/blog/slugs.py::slugify_pl` (dwie niezależne implementacje tej samej reguły, w dwóch językach). Root-cause fix (przenieść `slugify_pl` do `core`, wystawić gotową nazwę pliku z API) wymagałby zmiany w `blog` poza zakresem tego taska i przywróciłby częściowo koncept „slug” dla `DownloadTranslation`, którego task świadomie nie ma (patrz „Bez sluga i bez pól SEO” wyżej). Bez konkretnego scenariusza awarii dziś — obie implementacje niezależnie przetestowane, ten sam wynik.
+
+**#6 (parsePage zduplikowany z `posty/page.tsx`) — świadomie nienaprawiane.** Zgodnie z moim własnym instruktażem dla `frontend-agent` (własny test, nie import z `posty/page.tsx`) i z progiem „abstrakcja dopiero przy trzecim powtórzeniu” (`.claude/rules/engineering-principles.md`) — to dopiero drugie wystąpienie. Wyciągnięcie wspólnego helpera teraz byłoby przedwczesne wg reguł tego repo.
+
+**#7 (`Pagination.basePath: string` zamiast zamkniętego enuma) — świadomie nienaprawiane.** Spekulacyjne — sugestia dotyczy hipotetycznego przyszłego wywołującego, nie realnego dziś scenariusza awarii (oba miejsca użycia budują `basePath` poprawnie). Wzmacnianie typu pod nieistniejące jeszcze ryzyko łamie YAGNI.
+
+Po naprawach #1–#4: pełne `/check` (sekcja wyżej) zielone — 325 testów backendu (w tym 2 nowe regresyjne), 94 testy frontendu (w tym 3 nowe).
