@@ -179,4 +179,70 @@ Znaleziska z audytu obecnego kodu (do naprawy w kroku backend-agenta niżej):
 
 ## Decyzje po drodze
 
-_(do wypełnienia w trakcie implementacji)_
+### Spec kolorów/layoutu (krok 1 planu)
+
+`uiux-agent` zawiesił się dwa razy pod rząd (stream watchdog, brak
+odpowiedzi) — bez trzeciej próby na tym samym zadaniu. Spec przygotowany
+bezpośrednio, na tych samych danych (tokeny z `frontend/src/app/globals.css`,
+istniejące hexy w `blog/admin.py`/`branding/admin.py`, kontrast liczony
+wg formuły WCAG — luminancja względna + `(L1+0.05)/(L2+0.05)`).
+
+**Kolory (zmienne CSS Django Admin, `admin/css/base.css`):**
+| Zmienna | Wartość | Uzasadnienie |
+|---|---|---|
+| `--header-bg` | `#1f2b57` (navy) | Biały tekst na navy → kontrast 13.7:1 (AAA) |
+| `--header-color`, `--header-link-color`, `--header-branding-color` | `#ffffff` | — |
+| `--link-fg` | `#5b4fa0` (indigo) | Indigo na białym tle → 6.84:1 (AA, blisko AAA) |
+| `--link-hover-color` | `#1f2b57` (navy) | Ciemniejszy hover, zawsze AA |
+| `--primary` / `--button-bg` | `#5b4fa0` (indigo) | Biały tekst na indigo → 6.84:1 (AA) |
+| `--button-hover-bg` | `#46397d` (indigo −15%) | — |
+| `--default-button-bg` (drugi przycisk submit) | `#1f2b57` (navy) | Biały tekst → 13.7:1 |
+| `--default-button-hover-bg` | `#16204a` | — |
+| `--delete-button-bg` | **bez zmian** (`#ba2121`, domyślny czerwony Django) | Kolor "usuń" to semantyka bezpieczeństwa — nie zmieniać na markę |
+| `--body-bg` | `#f4f3fa` | = `--bg` frontendu |
+| `--border-color`, `--hairline-color` | `#e3e1f0` | = `--border` frontendu |
+| Kropki statusu (`blog/admin.py::_STATUS_COLORS`, ikonki `branding/admin.py`) | **bez zmian** | Już zatwierdzone, tekst zawsze towarzyszy kolorowi — nie dotykać |
+
+**Teal (`#2e8b90`) — tylko akcent, nie tekst**: teal na białym tle daje
+4.03:1, **nie przechodzi AA** (próg 4.5:1) dla normalnego tekstu/linków.
+Używać wyłącznie jako dekoracja bez tekstu (dolna linia pod headerem,
+obrys focus na polach formularza, mały pasek przy aktywnej zakładce
+językowej) — nigdy jako kolor linku/przycisku z tekstem.
+
+**Strona główna — grupowanie i kolejność:** 1. „Treść" (`blog.Post`,
+`about.AboutMe`) 2. „Branding" (`branding.SiteBranding`) 3. „Konfiguracja AI"
+(`ai_content.AIProviderSettings`, `ai_content.PostGenerator` / „Post z AI")
+4. „Konta" (`accounts.User`) — kolejność wg częstości codziennego użycia
+przez redaktora (treść najczęściej, konta najrzadziej).
+
+**Logo:** jeden blok brandingu (`{% block branding %}` w
+`admin/base_site.html`, renderowany na każdej stronie **i** na stronie
+logowania — to ten sam szablon). `height: 32px` w headerze standardowych
+stron, `height: 56px` na stronie logowania (Django i tak powiększa `#header`
+na `/login/` własnym CSS) — `alt="okowFormie"`.
+
+**Dark mode: wyłączony (świadomie), nie dziedziczony z Django.** CSS
+override w `:root { ... }` **bez** owijania w
+`@media (prefers-color-scheme: dark)` — nasz plik ładuje się po
+`admin/css/base.css`, więc bezwarunkowe `:root` wygrywa z dark-mode blokiem
+Django niezależnie od ustawień systemowych użytkownika. Dopasowanie
+osobnej palety pod dark mode to dodatkowa praca projektowa poza zakresem
+tego taska (do rozważenia jako follow-up, jeśli ktoś zgłosi potrzebę).
+
+**Rozmiary widgetów (finalne wartości):**
+- `meta_title` (blog **i** about): `forms.TextInput(attrs={"size": 80})` —
+  jedna linia, wzorzec `cover_image_alt`/`photo_alt`.
+- `meta_description` (blog **i** about): `forms.Textarea(attrs={"rows": 3})`
+  — wzorzec `excerpt`.
+- `extra_instructions` (`ai_content/admin.py::AIProviderSettingsAdmin`):
+  `rows` `4` → `8`.
+- `topic` (`ai_content/forms.py::PostGenerationForm`):
+  `widget=forms.TextInput(attrs={"size": 60})`.
+- `local_focus`: bez zmian (krótka nazwa miejsca, obecna szerokość wystarcza).
+
+**Filtry/search — jedyny realny gap:** `PostAdmin.search_fields` nie
+przeszukuje autora — dopisać `"author__username"` do istniejącego tuple.
+Reszta (`TranslationCompletenessFilter`, `translations__status`, `author`,
+`created_at`, `date_hierarchy`) już wystarczająca, bez zmian. Stockowy
+`UserAdmin` (accounts) — domyślne filtry/`search_fields` Django już
+wystarczające, bez zmian.
