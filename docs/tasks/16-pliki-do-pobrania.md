@@ -18,7 +18,7 @@
 - [x] backend-agent: panel admina `DownloadAdmin` (`TranslatableAdmin`) — kolumny tytuł + status PL/EN (redaktor widzi braki tłumaczeń, `.claude/rules/content-admin.md`), pole `order`, fieldsety (plik osobno od nazwy/opisu, publikacja osobno).
 - [x] backend-agent: publiczny endpoint `GET /api/v1/{lang}/downloads/?page=n` (`ListAPIView`, wzorzec `PostListView`) — tylko `published`, paginacja (domyślny `PAGE_SIZE`), throttling (osobny scope `downloads`), `Cache-Control`.
 - [x] backend-agent: rejestracja `downloads` w `INSTALLED_APPS`, `backend/urls.py`, throttle rate w `settings.py`.
-- [ ] frontend-agent: link „Do pobrania" / „Downloads" w `PrimaryNav` + `dictionary.ts`, strona `/[lang]/do-pobrania` (RSC + fetch, ISR jak posty), `getDownloads(lang, page)` w `lib/api/client.ts` + typy w `lib/api/types.ts`.
+- [x] frontend-agent: link „Do pobrania" / „Downloads" w `PrimaryNav` + `dictionary.ts`, strona `/[lang]/do-pobrania` (RSC + fetch, ISR jak posty), `getDownloads(lang, page)` w `lib/api/client.ts` + typy w `lib/api/types.ts`.
 - [ ] qa-agent: niezależne review (regresje, bezpieczeństwo uploadu, testy, zgodność z rules).
 - [ ] naprawa znalezisk z review qa-agent.
 - [ ] `/check` — zielone.
@@ -54,6 +54,15 @@ W przeciwieństwie do opcjonalnych obrazów w `blog`/`about` (`cover_image`, `ph
 ### Migracja w osobnym commicie
 `0001_initial.py` scommitowany osobno od reszty logiki (`.claude/rules/conventions.md`), tak jak `docs/tasks/9-strona-o-mnie.md`.
 
+### `Pagination` generalizowany o `basePath` zamiast literalnego reużycia
+Zadanie zakładało reużycie `Pagination` bez zmian, ale komponent budował `href` na sztywno z `/${lang}/posty` — literalne podpięcie go pod `/do-pobrania` linkowałoby paginację listy plików z powrotem do listy postów. Zamieniono prop `lang` (używany wyłącznie do budowy tego linku) na `basePath: string` (np. `/pl/posty`, `/pl/do-pobrania`) — wywołujący (strona) podaje pełną ścieżkę, komponent dokleja tylko `?page=`. Zaktualizowano jedyne dotychczasowe miejsce wywołania (`posty/page.tsx`, ten sam wynikowy `href` co wcześniej — bez zmiany zachowania) i test (`Pagination.test.tsx`, dopisany przypadek z `basePath="/pl/do-pobrania"`, snapshoty bez zmian treściowych poza propsem). Uzasadnienie: `engineering-principles.md` (odwrócenie zależności — komponent nie zna konkretnej domeny), a nie literalna interpretacja „bez zmian”, która złamałaby poprawność.
+
+### `npm test` już istniał
+Plan sugerował możliwy brak skryptu `test` w `package.json` — w praktyce już istnieje (`vitest run`, dodany przy wcześniejszym tasku z Vitest+Testing Library), więc nie było potrzeby go dokładać.
+
+### Snapshot `Header.test.tsx.snap` zaktualizowany
+Dodanie trzeciego linku nawigacji (`PrimaryNav`) zmieniło markup `Header` — 4 snapshoty w `Header.test.tsx.snap` przeregenerowane (`vitest run -u`) i ręcznie zweryfikowane w diffie: jedyna zmiana to doklejony `<a href="/{lang}/do-pobrania">{Do pobrania|Downloads}</a>`, bez regresji w istniejącym markupie.
+
 ## Wynik weryfikacji lokalnej — backend (2026-09-23)
 
 Wszystko uruchomione przez `docker compose exec -T backend uv run ...` (kontenery już działały, `docker compose ps` — patrz notatka niżej o gunicornie i OpenTelemetry).
@@ -70,3 +79,28 @@ Wszystko uruchomione przez `docker compose exec -T backend uv run ...` (kontener
 Przy okazji zaktualizowany istniejący test `backend/src/backend/tests/test_admin_site.py::test_superuser_widzi_kazdy_model_we_wlasciwej_kategorii` (rozszerzony o `("downloads", "download")`) — regresja spodziewana po dopisaniu `Download` do kategorii „Treść", nie defekt.
 
 **Nie zrobione w tym przebiegu (poza zakresem backend-agenta):** frontend (`docs/tasks/16-pliki-do-pobrania.md` → sekcja frontend-agent), `qa-agent`, `/code-review`.
+
+## Wynik weryfikacji lokalnej — frontend (2026-09-23)
+
+Nowe/zmienione pliki:
+- `frontend/src/lib/api/types.ts` — `Download` interface.
+- `frontend/src/lib/api/client.ts` — `getDownloads(lang, page)`.
+- `frontend/src/lib/i18n/dictionary.ts` — `header.navDownloads`, sekcja `downloads` (PL/EN).
+- `frontend/src/components/Header/PrimaryNav.tsx`, `Header.tsx` — trzeci link menu + snapshot zaktualizowany.
+- `frontend/src/components/Pagination/Pagination.tsx` (+ `.test.tsx`) — `basePath` zamiast `lang` (patrz „Decyzje po drodze”).
+- `frontend/src/app/[lang]/posty/page.tsx` — dostosowany do nowego propu `Pagination`.
+- `frontend/src/components/DownloadList/DownloadList.tsx` (+ `.module.css`, `.test.tsx`) — nowy komponent listy.
+- `frontend/src/app/[lang]/do-pobrania/page.tsx` (+ `page.test.ts`) — nowa strona.
+
+Komendy i wynik:
+- `npm run lint` → czysto, brak błędów/ostrzeżeń.
+- `npm run typecheck` → czysto, brak błędów.
+- `npm test` (`vitest run`) → `16 passed (16 test files), 89 passed (89 tests)` — w tym nowe: `DownloadList.test.tsx` (3 testy: pusta lista, render tytułu/opisu/linku pobierania, brak pustego `<p>` dla pustego `description`), `do-pobrania/page.test.ts` (`parsePage`, 9 testów analogicznych do `posty/page.test.ts`), rozszerzony `Pagination.test.tsx` (nowy przypadek `basePath` spoza `/posty`), zaktualizowany snapshot `Header.test.tsx.snap` (3. link nawigacji).
+
+Weryfikacja wizualna: sprawdzone przez `curl` na żywym `docker compose` (`frontend`/`backend` już działały, port 3000/8000) — nie w przeglądarce/MCP, ale przez realny render Next.js dev servera pod adresem, jaki zobaczyłaby przeglądarka:
+- `GET /pl/do-pobrania` → `<h1>Do pobrania</h1>`, pusty stan „Brak plików do pobrania.” (baza nie ma jeszcze żadnego opublikowanego pliku — `GET /api/v1/pl/downloads/` zwraca `{"count":0,...,"results":[]}`), canonical/hreflang/OG poprawne.
+- `GET /en/do-pobrania` → pusty stan „No downloads available yet.”, `<title>Downloads | okowFormie</title>`.
+- `GET /pl/do-pobrania?page=999` → `404` (strona poza zakresem paginacji, zgodnie ze wzorcem `posty`).
+- Link „Do pobrania”/„Downloads” obecny w menu na `/pl/do-pobrania`, `/pl/posty`, `/pl/o-mnie` (i analogicznie EN) — na stronie `/pl/do-pobrania` ma `aria-current="page"`.
+
+Nie sprawdzone: realny render z niepustą listą (brak danych testowych w bazie — plan backendu nie zakładał seed danych), stany 375/768/1440px w przeglądarce (brak dostępu do przeglądarki/MCP w tej sesji — CSS `DownloadList.module.css` napisany mobile-first z rozszerzeniem `min-width: 768px` analogicznie do `PostList.module.css`, ale nie zweryfikowany wizualnie na realnych szerokościach).
