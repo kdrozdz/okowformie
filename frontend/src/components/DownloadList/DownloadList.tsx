@@ -7,6 +7,7 @@ import styles from "./DownloadList.module.css";
 interface DownloadListProps {
   downloads: Download[];
   downloadLabel: string;
+  downloadErrorMessage: string;
   emptyMessage: string;
 }
 
@@ -17,7 +18,12 @@ interface DownloadListProps {
  * URL (nigdy `null`, w przeciwieństwie do opcjonalnych obrazów) — link
  * pobierania renderuje się bezwarunkowo.
  */
-export function DownloadList({ downloads, downloadLabel, emptyMessage }: DownloadListProps) {
+export function DownloadList({
+  downloads,
+  downloadLabel,
+  downloadErrorMessage,
+  emptyMessage,
+}: DownloadListProps) {
   if (downloads.length === 0) {
     return <p className={styles.empty}>{emptyMessage}</p>;
   }
@@ -39,6 +45,8 @@ export function DownloadList({ downloads, downloadLabel, emptyMessage }: Downloa
             label={downloadLabel}
             ariaLabel={`${downloadLabel}: ${download.title}`}
             className={styles.downloadLink}
+            errorMessage={downloadErrorMessage}
+            errorClassName={styles.downloadError}
           />
         </li>
       ))}

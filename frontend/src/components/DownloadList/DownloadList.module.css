@@ -63,6 +63,12 @@
   opacity: 0.85;
 }
 
+.downloadError {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: #b42318;
+}
+
 @media (min-width: 768px) {
   .card {
     flex-direction: row;

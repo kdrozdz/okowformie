@@ -5,7 +5,7 @@
 
 ## Plan
 - [x] `blog/admin.py::PostAdmin` — duplikacja wierszy w liście (JOIN na `translations` bez `.distinct()`), ten sam bug co naprawiony wcześniej w `downloads.admin.DownloadAdmin`. Dodano `.distinct()` w `get_queryset()`, usunięto `ordering="translations__title"` z `admin_title` (Postgres wymaga kolumny `ORDER BY` w `SELECT DISTINCT`), regresyjny test w `blog/tests/test_admin.py`.
-- [ ] `DownloadButton.tsx` — fallback na błąd fetch cofa się do `window.open()`, czyli zachowania sprzed fixa `860320b`. Do decyzji z userem: to zachowanie jest **celowe i pokryte testem** (`DownloadButton.test.tsx`: "nie zostawia martwego przycisku"), więc nie jest to oczywista regresja do mechanicznej naprawy — czeka na decyzję, czy dodać widoczny komunikat błędu.
+- [x] `DownloadButton.tsx` — fallback na błąd fetch cofa się do `window.open()` (zachowanie sprzed fixa `860320b`), ale **celowe i pokryte testem** (`DownloadButton.test.tsx`: "nie zostawia martwego przycisku"), więc nie cofnięto go — dodano tylko widoczny, tłumaczony komunikat błędu (`role="alert"`, klucz `downloads.downloadError` w `dictionary.ts` PL/EN), żeby fallback nie był cichy. `DownloadButton`/`DownloadList` dostały nowe wymagane propsy `errorMessage`/`errorClassName`/`downloadErrorMessage`, testy zaktualizowane, `npm run lint`/`typecheck`/`test` (100/100) zielone.
 - [ ] Pozostałe znaleziska z reviewu (obserwowalność, duplikacja throttle, naruszenie `scope.md` w `ai_content`, drobne wydajnościowe) — nie są bugami, tylko dług/ulepszenia; do osobnej decyzji, czy wchodzą w zakres tego taska.
 
 ## Decyzje po drodze
