@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "accounts",
     "blog",
     "about",
+    "downloads",
     "ai_content",
     "branding",
 ]
@@ -261,6 +262,7 @@ REST_FRAMEWORK = {
         "posts": os.environ.get("BLOG_API_THROTTLE_RATE", "60/min"),
         "about": os.environ.get("ABOUT_API_THROTTLE_RATE", "60/min"),
         "branding": os.environ.get("BRANDING_API_THROTTLE_RATE", "60/min"),
+        "downloads": os.environ.get("DOWNLOADS_API_THROTTLE_RATE", "60/min"),
     },
 }
 

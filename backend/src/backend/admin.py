@@ -27,7 +27,11 @@ admin.site.index_title = "Panel redakcyjny"
 #: `get_app_list` niżej — nigdy nie znika bez śladu z nawigacji.
 _APP_LIST_CATEGORIES: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] = (
     # (slug ASCII dla app_label/id w HTML, nazwa wyświetlana, modele)
-    ("content", "Treść", (("blog", "post"), ("about", "aboutme"))),
+    (
+        "content",
+        "Treść",
+        (("blog", "post"), ("about", "aboutme"), ("downloads", "download")),
+    ),
     ("branding", "Branding", (("branding", "sitebranding"),)),
     (
         "ai-config",
