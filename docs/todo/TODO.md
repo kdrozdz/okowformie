@@ -2,6 +2,104 @@
 
 Format i statusy: `README.md` w tym folderze.
 
+## [otwarte] `core/telemetry.py`: licznik wyjątków etykietowany surową `request.path` — nieograniczona kardynalność metryki (2026-09-23)
+`_record_exception` (`backend/src/core/telemetry.py:148`) etykietuje
+`django_unhandled_exceptions_total` bezpośrednio `request.path`, bez
+normalizacji/bucketowania. Bot odpytujący wiele różnych, nieistniejących
+URL-i wywołujących wyjątek tworzy nową kombinację etykiet dla każdej
+ścieżki — licznik rośnie bez ograniczeń w pamięci procesu i w payloadzie
+scrape'a Prometheusa (kanoniczny problem "cardinality explosion"). Do
+naprawy: normalizować `request.path` przed użyciem jako etykiety (np.
+`request.resolver_match.route` zamiast surowej ścieżki, albo stała wartość
+`"unmatched"` dla 404).
+
+**Kontekst:** znalezisko z `/code-review high` (branch `17-fix-review-findings`,
+diff `origin/main...HEAD`), `backend/src/core/telemetry.py:148`
+(`_record_exception`), `docs/decisions/2026-09-22-observability-otel-prometheus.md`.
+
+## [otwarte] `frontend/instrumentation.ts`: start SDK OTel na porcie 9464 bez flagi env i bez try/catch — może crashować `next dev`/`next start` (2026-09-23)
+`register()` (`frontend/src/instrumentation.ts:45`) uruchamia SDK
+OTel/Prometheus na porcie 9464 bezwarunkowo — bez odpowiednika
+`OTEL_METRICS_ENABLED` z backendu i bez try/catch wokół startu SDK. Jeśli
+port 9464 jest już zajęty (ponowne `next dev`, drugi lokalny proces —
+backend też próbuje bindować własny port metryk, ale to inny port; ryzyko
+dotyczy kolizji między wieloma instancjami frontendu albo pozostałością po
+poprzednim procesie), `register()` rzuca nieobsłużony wyjątek i crashuje
+cały proces Next.js, zamiast się zdegradować jak backend
+(`core/telemetry.py` ma guard + broad try/except).
+
+**Kontekst:** znalezisko z `/code-review high` (branch `17-fix-review-findings`),
+`frontend/src/instrumentation.ts:45` (`register()`), `backend/src/core/telemetry.py`
+(`setup_telemetry`, wzorzec do naśladowania — flaga env + try/except).
+
+## [otwarte] `downloads/throttling.py`: 4. niemal identyczna klasa `AnonRateThrottle` per-app — przekroczony próg abstrakcji (2026-09-23)
+`DownloadsAnonRateThrottle` (`backend/src/downloads/throttling.py:6`) to
+czwarta prawie identyczna, jednolinijkowa podklasa `AnonRateThrottle` (po
+`blog`, `about`, `branding`), każda z własnym wpisem w ustawieniach/env.
+`.claude/rules/engineering-principles.md` mówi wprost: abstrakcja dopiero
+przy trzecim powtórzeniu — `downloads` jest appką, która ten próg
+przekracza. Do rozważenia: wspólna fabryka/baza w `core.throttling`
+(np. `def scoped_anon_throttle(scope: str) -> type[AnonRateThrottle]`),
+żeby czwarta i każda kolejna appka nie kopiowała wzorca ręcznie.
+
+**Kontekst:** znalezisko z `/code-review high` (branch `17-fix-review-findings`),
+`backend/src/downloads/throttling.py:6`, analogiczne klasy w `blog/`,
+`about/`, `branding/`.
+
+## [otwarte] `core/telemetry.py`: importy `settings`/`connection` wewnątrz `DBQueryMetricsMiddleware.__call__` na gorącej ścieżce (2026-09-23)
+`DBQueryMetricsMiddleware.__call__` (`backend/src/core/telemetry.py:189`) —
+pierwszy middleware w `MIDDLEWARE`, uruchamiany na każdym requeście —
+importuje `django.conf.settings` i `django.db.connection` wewnątrz metody
+zamiast na poziomie modułu, bez widocznego powodu (cyklicznego importu) —
+reszta pliku importuje moduły Django na poziomie modułu bez problemu.
+Każdy request płaci dwa zbędne lookupy systemu importów, zanim w ogóle
+sprawdzony zostanie `settings.OTEL_METRICS_ENABLED`. Drobna poprawka:
+przenieść oba importy na górę pliku.
+
+**Kontekst:** znalezisko z `/code-review high` (branch `17-fix-review-findings`),
+`backend/src/core/telemetry.py:189` (`DBQueryMetricsMiddleware.__call__`).
+
+## [otwarte] `ai_content/services.py` importuje stałe przez `blog.constants` zamiast bezpośrednio z `core.constants` — narusza `scope.md` (2026-09-23)
+`services.py` (`backend/src/ai_content/services.py:18`) importuje
+`Language`/`PostStatus` z `blog.constants`, mimo że `blog.constants` samo
+dokumentuje się jako czysty re-eksport z `core.constants`, a `schemas.py`
+dwie linie niżej już importuje inne stałe wprost z `core`. To dokładnie
+ten cross-app import między domenowymi appkami, którego zabrania
+`.claude/rules/scope.md` ("żadna z nich nie importuje bezpośrednio z
+drugiej"). Ryzyko: jeśli re-eksport w `blog.constants` kiedyś zniknie albo
+zmieni kształt, `ai_content` się wysypie z powodu zależności, której nie
+musiał brać. Naprawa: zmienić import na `from core.constants import
+Language, PostStatus`.
+
+**Kontekst:** znalezisko z `/code-review high` (branch `17-fix-review-findings`),
+`backend/src/ai_content/services.py:18`, `.claude/rules/scope.md`.
+
+## [otwarte] `frontend/instrumentation.ts`: globalny monkey-patch `http.Server.prototype.emit` zamiast scoped instrumentacji (2026-09-23)
+`instrumentHttpServer()` (`frontend/src/instrumentation.ts:92`) łata
+`http.Server.prototype.emit` dla wszystkich instancji `Server` i
+wszystkich eventów, ręcznie licząc metryki HTTP, które dostarcza gotowy,
+utrzymywany pakiet `@opentelemetry/instrumentation-http`. Każdy inny
+`http.Server` powstały w procesie (zależność, narzędzie dev, przyszły kod)
+płaci narzut wrappera przez cały czas życia procesu, a przyszła zmiana w
+Node/Next.js dot. sposobu emitowania eventów przez `Server` może po cichu
+zepsuć metryki. Do rozważenia: pakiet auto-instrumentacji zamiast
+ręcznego patcha, albo przynajmniej zawężenie patcha do zdarzenia
+`request` konkretnego serwera Next.js.
+
+**Kontekst:** znalezisko z `/code-review high` (branch `17-fix-review-findings`),
+`frontend/src/instrumentation.ts:92` (`instrumentHttpServer`).
+
+## [otwarte] `frontend/instrumentation.ts`: sekwencyjne dynamiczne importy zamiast `Promise.all` — zbędne opóźnienie startu serwera (2026-09-23)
+`register()` (`frontend/src/instrumentation.ts:38`) czeka na cztery
+niezależne dynamiczne importy (`NodeSDK`, `PrometheusExporter`,
+`resourceFromAttributes`, `ATTR_SERVICE_NAME`) sekwencyjnie, mimo że żaden
+z nich nie zależy od wyniku innego. Start serwera opóźnia się o sumę
+czterech rund resolve/parse zamiast o czas najwolniejszej z nich —
+`Promise.all` skróciłoby to do maksimum z czterech.
+
+**Kontekst:** znalezisko z `/code-review high` (branch `17-fix-review-findings`),
+`frontend/src/instrumentation.ts:38` (`register()`).
+
 ## [otwarte] Liczenie unikalnych odwiedzających bloga — osobny task, poza OTel/Prometheus (2026-09-22)
 Przy tasku 14 (observability) padło pytanie "ile osób dziś odwiedziło stronę".
 Prometheus/OTel liczy requesty, nie unikalnych użytkowników — etykietowanie
