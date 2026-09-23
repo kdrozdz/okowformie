@@ -111,6 +111,15 @@ def test_zbyt_dlugi_opis_seo_daje_przyjazny_komunikat() -> None:
     assert "Upewnij się" not in message
 
 
+def test_meta_title_i_meta_description_maja_powiekszone_widgety() -> None:
+    """Ten sam wzorzec co `blog.forms.PostAdminForm`
+    (`docs/tasks/15-motyw-panelu-admina.md`)."""
+    form = build_form()
+
+    assert form.fields["meta_title"].widget.attrs.get("size") == 80
+    assert form.fields["meta_description"].widget.attrs.get("rows") == 3
+
+
 def test_bardzo_dlugie_imie_i_nazwisko_jest_odrzucane() -> None:
     """`full_name.max_length == 200` — pole wspólne, nie tłumaczone, ale ten
     sam niezmiennik: redaktor wklejający zbyt długi tekst dostaje czytelny

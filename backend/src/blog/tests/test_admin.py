@@ -9,7 +9,7 @@ from django.test import RequestFactory
 
 from blog.admin import PostAdmin, TranslationCompletenessFilter
 from blog.constants import Language, PostStatus
-from blog.models import Post
+from blog.models import Post, PostTranslation
 
 pytestmark = pytest.mark.django_db
 
@@ -82,6 +82,54 @@ def test_podrobiona_wartosc_filtra_nie_zawezaja_listy(
     post = make_post(pl={})
 
     assert apply_filter(post_admin, value) == [post]
+
+
+def test_wyszukiwanie_po_fragmencie_nazwy_autora_zweza_liste(
+    client: Any, author: Any, make_post: Callable[..., Post], settings: Any, django_user_model: Any
+) -> None:
+    """`PostAdmin.search_fields` dostał `"author__username"`
+    (`docs/tasks/15-motyw-panelu-admina.md`) — test na faktyczne zawężenie
+    wyniku wyszukiwania, nie tylko na obecność wpisu w konfiguracji: post
+    innego autora, którego nazwa użytkownika nie zawiera szukanego
+    fragmentu, nie może się pojawić w wyniku."""
+    author.is_staff = True
+    author.is_superuser = True
+    author.save()
+    client.force_login(author)
+    post_od_autora = make_post(pl={"title": "Nalewka z pigwy"})
+
+    inny_autor = django_user_model.objects.create_user(
+        username="maria-nowak", password="haslo-testowe-123", is_staff=True
+    )
+    post_innego_autora = Post.objects.create(author=inny_autor)
+    PostTranslation.objects.create(
+        master=post_innego_autora,
+        language_code="pl",
+        title="Inny post",
+        excerpt="Zajawka innego posta",
+        content="<p>Treść</p>",
+        status=PostStatus.DRAFT,
+    )
+
+    # Fragment z konfiguracji fixture `author` (`blog/tests/conftest.py`:
+    # `username="redaktorka"`) — musi nie być podciągiem `"maria-nowak"`,
+    # inaczej test fałszywie przeszedłby przez zbieg okoliczności w nazwach,
+    # nie przez samo `author__username`.
+    fragment = "aktork"
+    assert fragment in author.username
+    assert fragment not in inny_autor.username
+
+    response = client.get(f"/{settings.ADMIN_URL}blog/post/", {"q": fragment})
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    # Kontrola pozytywna (post autora, którego szukamy, jest na liście) i
+    # negatywna (post innego autora nie jest) w jednym teście — bez
+    # pozytywnej połowy `not in` przeszedłby fałszywie, gdyby wyszukiwanie
+    # było całkowicie zepsute (np. zawsze zwracało pustą listę).
+    assert "Nalewka z pigwy" in content
+    assert "Inny post" not in content
+    assert post_od_autora.pk is not None
 
 
 def test_zmiana_posta_otwiera_sie(

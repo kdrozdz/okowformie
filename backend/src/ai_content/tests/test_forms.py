@@ -70,3 +70,22 @@ def test_topic_dokladnie_na_limicie_jest_akceptowany() -> None:
     form = PostGenerationForm(data={"topic": "a" * 200, "local_focus": "Wrocław, Polska"})
 
     assert form.is_valid(), form.errors
+
+
+def test_topic_i_local_focus_maja_help_text() -> None:
+    """Wcześniej tylko `label` i komunikaty błędów — redaktor nie miał
+    podsumowania, co te pola robią, dopóki nie kliknął i nie dostał błędu
+    (`docs/tasks/15-motyw-panelu-admina.md`). Sanity check obecności, nie
+    treści słowo w słowo."""
+    form = PostGenerationForm()
+
+    assert form.fields["topic"].help_text
+    assert form.fields["local_focus"].help_text
+
+
+def test_topic_ma_widget_textinput_powiekszony() -> None:
+    """`widget=forms.TextInput(attrs={"size": 60})` — wzorzec rozmiaru wg
+    długości treści (`docs/tasks/15-motyw-panelu-admina.md`)."""
+    form = PostGenerationForm()
+
+    assert form.fields["topic"].widget.attrs.get("size") == 60
