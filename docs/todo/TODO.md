@@ -274,4 +274,111 @@ bezpieczeństwa, nie doklejka do kolejnego niezwiązanego taska.
 `backend/src/backend/settings.py` (brak `SECURE_CSP`/
 `ContentSecurityPolicyMiddleware` w `MIDDLEWARE`), `.claude/rules/security.md`,
 `docs/tasks/15-motyw-panelu-admina.md`.
+
+## [otwarte] `test_telemetry.py` failuje wewnątrz kontenera `backend`, bo `docker-compose.yml` ustawia `OTEL_METRICS_ENABLED: True` domyślnie (2026-09-23)
+`uv run pytest` uruchomiony przez `docker compose exec backend` failuje na
+`test_middleware_nie_wola_execute_wrapper_gdy_otel_wylaczony` i
+`test_ready_nie_wola_setup_telemetry_gdy_flaga_wylaczona`
+(`src/core/tests/test_telemetry.py`) — oba zakładają
+`OTEL_METRICS_ENABLED=False`, ale `docker-compose.yml:101` ustawia
+`OTEL_METRICS_ENABLED: ${OTEL_METRICS_ENABLED:-True}` jako domyślną wartość
+dla usługi `backend`, więc `printenv OTEL_METRICS_ENABLED` w kontenerze
+zwraca `True` i testy widzą realne wywołanie `setup_telemetry()`, którego
+nie oczekują. Niezwiązane z `downloads` (taska 16) — zauważone tylko przy
+uruchamianiu pełnego `uv run pytest` przez `docker compose exec` przy
+weryfikacji tego taska; poza `core`/`downloads` nic nie zmieniono. Do
+sprawdzenia: albo testy powinny same nadpisywać `OTEL_METRICS_ENABLED` przez
+`override_settings`/`monkeypatch` zamiast zakładać wartość ze środowiska,
+albo `docker-compose.yml` powinien mieć `OTEL_METRICS_ENABLED: False`
+domyślnie dla usługi `backend` używanej też do testów (z osobnym profilem/
+override dla obserwowalności, jeśli to ma zostać włączone celowo).
+
+**Kontekst:** `backend/src/core/tests/test_telemetry.py`
+(`test_middleware_nie_wola_execute_wrapper_gdy_otel_wylaczony`,
+`test_ready_nie_wola_setup_telemetry_gdy_flaga_wylaczona`),
+`docker-compose.yml:101`, `docs/tasks/16-pliki-do-pobrania.md` (znalezione
+przy weryfikacji `uv run pytest` przez `docker compose exec backend`).
 na branchu `12-generator-postow-ai`, `backend/Dockerfile` (`--workers 3`).
+
+## [otwarte] Brak twardego limitu rozmiaru requestu przed walidacją uploadu — dotyczy całego backendu, nie tylko `downloads` (2026-09-23)
+`backend/src/backend/settings.py` nie nadpisuje `DATA_UPLOAD_MAX_MEMORY_SIZE`/
+`FILE_UPLOAD_MAX_MEMORY_SIZE` (Django default 2.5 MB — pliki powyżej tego
+progu Django i tak spooluje na dysk, nie trzyma w całości w RAM, więc to nie
+jest niekontrolowany DoS pamięciowy), a `infra/` nie ma jeszcze configu nginx
+z `client_max_body_size`. `downloads.validators.validate_pdf_upload`
+(dodany w tasku 16) jest sam w sobie poprawny — kolejność sprawdzeń to
+rozszerzenie (tanie, bez I/O) → `value.size` (metadana) → magic bytes (czyta
+tylko pierwsze 5 bajtów) — ale ryzyko leży warstwę wyżej: przyjęcie requestu,
+zanim walidator w ogóle zostanie wywołany. Identyczna, pre-existing luka
+dotyczy już dziś uploadów `blog`/`about` (obrazy) — nie jest to regresja
+wprowadzona przez `downloads`, tylko wspólny gap całego stacku uploadu,
+dodatkowo ograniczony tym, że upload w panelu wymaga zalogowanego stafa (nie
+publiczny endpoint). Do zrobienia przy tasku deployu produkcyjnego/nginx na
+Cyberfolks VPS: jawny `client_max_body_size` w konfiguracji reverse proxy +
+rozważenie `DATA_UPLOAD_MAX_MEMORY_SIZE` w `settings.py`.
+
+**Kontekst:** znalezisko z review `qa-agent` na branchu `16-pliki-do-pobrania`,
+`backend/src/downloads/validators.py`, `backend/src/backend/settings.py`
+(brak `DATA_UPLOAD_MAX_MEMORY_SIZE`), `docs/tasks/16-pliki-do-pobrania.md`.
+
+## [otwarte] `blog.admin.PostAdmin.admin_title` ma tę samą lukę duplikacji wierszy (JOIN + sortowanie/filtr bez `.distinct()`), naprawioną w `downloads` (2026-09-23)
+Przy `/code-review` na branchu `16-pliki-do-pobrania` wykryto i empirycznie
+zweryfikowano: `DownloadAdmin` (kopia wzorca `PostAdmin`) miał `list_filter`
+i sortowanie kolumny „Nazwa” po polu z relacji `translations` — oba robią
+JOIN, więc plik/post z dwoma tłumaczeniami (PL+EN) pasującymi do
+filtra/sortowania pojawiał się na liście panelu dwa razy. `blog.admin.py`
+ma identyczny wzorzec (`list_filter = (..., "translations__status", ...)`,
+`admin_title` z `ordering="translations__title"`) — zweryfikowane wprost w
+shellu: `Post.objects.filter(translations__status="published")` zwraca ten
+sam `pk` wielokrotnie dla postów z opublikowanymi wersjami PL i EN. Poza
+zakresem taska 16 (nie dotykał `blog/`), niezmienione tam świadomie.
+
+**Naprawa zastosowana w `downloads` (nie w `blog`):** `DownloadAdmin.get_queryset()`
+dostał `.distinct()` — to w pełni naprawia przypadek `list_filter` (JOIN bez
+sortowania). Sortowanie po kolumnie z JOIN-a (`ordering="translations__title"`)
+**nie** daje się naprawić samym `.distinct()`: Postgres wymaga, żeby
+`SELECT DISTINCT` zawierał w SELECT każdą kolumnę z `ORDER BY`, więc `title`
+z dwóch różnych tłumaczeń robi z `(id, title)` dwie różne „distinct” krotki
+— zweryfikowane empirycznie (`?o=1` nadal dawał dwa wiersze dla tego samego
+`pk` mimo `.distinct()`). Zamiast tego `downloads/admin.py::admin_title`
+stracił `ordering=` — lista ma kanoniczne sortowanie po polu `order`, a
+sortowanie alfabetyczne po nazwie nie było wymaganiem.
+
+**Do rozważenia w `blog`:** ta sama para napraw (`.distinct()` w
+`PostAdmin.get_queryset()` + usunięcie `ordering="translations__title"` z
+`admin_title`, albo docelowo subquery/annotate zamiast surowego JOIN-a, jeśli
+klikalne sortowanie po tytule ma zostać) — osobny, świadomie zlecony task,
+bo dotyka już działającego panelu bloga.
+
+**Kontekst:** `backend/src/blog/admin.py` (`PostAdmin.list_filter`,
+`PostAdmin.admin_title`), `backend/src/downloads/admin.py`
+(`DownloadAdmin.get_queryset`, `DownloadAdmin.admin_title` — naprawiony
+wzorzec), `docs/tasks/16-pliki-do-pobrania.md`.
+
+## [otwarte] `downloadFilename` (frontend) duplikuje transliterację polskich znaków z `blog.slugs.slugify_pl` (backend) — dwie niezależne implementacje tej samej reguły (2026-09-23)
+Przy `/code-review` na branchu `16-pliki-do-pobrania` zauważono:
+`frontend/src/lib/format/filename.ts` ma własną mapę polskich znaków
+specjalnych (`ą→a`, `ł→l`, ...), identyczną co do zasady z
+`backend/src/blog/slugs.py::slugify_pl`/`_POLISH_TRANSLITERATION` — ta sama
+reguła zaimplementowana niezależnie w dwóch językach. Świadomie
+niescalone w tym tasku: `slugify_pl` mieszka w `blog` (nie w `core`, mimo
+że `.claude/rules/scope.md` wymaga wspólnych pojęć w `core` — sam `blog`
+jeszcze nie miał drugiego konsumenta tej funkcji), a przeniesienie logiki
+generowania nazwy pliku na backend (np. nowe pole `filename` w
+`DownloadListSerializer` korzystające z `slugify_pl` przeniesionego do
+`core`) wymagałoby: (1) przesunięcia `slugify_pl`/`build_unique_slug` do
+`core` (zmiana obejmująca `blog`, poza zakresem taska o plikach do
+pobrania), (2) świadomej decyzji, czy `downloads` faktycznie potrzebuje
+czegoś slug-podobnego — task 16 **celowo** wykluczył pole `slug` z
+`DownloadTranslation` (patrz „Decyzje po drodze” w
+`docs/tasks/16-pliki-do-pobrania.md` — plik do pobrania nie ma własnej
+strony szczegółu). Nie jest to bug: obie implementacje są dziś niezależnie
+przetestowane i dają te same wyniki dla realnych tytułów PL/EN. Ryzyko to
+czysto konserwacyjne — przyszła poprawka reguły transliteracji
+(nowy znak specjalny, zmiana zachowania przy kolizji) zastosowana w jednym
+miejscu może nie trafić do drugiego. Do rozważenia przy kolejnej zmianie w
+tym obszarze: przenieść `slugify_pl` do `core`, wystawić gotową nazwę pliku
+z API zamiast liczyć ją po stronie frontendu.
+
+**Kontekst:** `frontend/src/lib/format/filename.ts`, `backend/src/blog/slugs.py`
+(`slugify_pl`, `_POLISH_TRANSLITERATION`), `docs/tasks/16-pliki-do-pobrania.md`.

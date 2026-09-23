@@ -94,6 +94,7 @@ export function Header({ lang, authorName, branding }: HeaderProps) {
         ariaLabel={dict.navAriaLabel}
         aboutLabel={dict.navAbout}
         postsLabel={dict.navPosts}
+        downloadsLabel={dict.navDownloads}
       />
     </header>
   );

@@ -36,6 +36,7 @@ urlpatterns = [
     path("api/v1/", include("blog.urls")),
     path("api/v1/", include("about.urls")),
     path("api/v1/", include("branding.urls")),
+    path("api/v1/", include("downloads.urls")),
 ]
 
 if settings.DEBUG:

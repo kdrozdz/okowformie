@@ -14,6 +14,7 @@ export interface Dictionary {
     navAriaLabel: string;
     navAbout: string;
     navPosts: string;
+    navDownloads: string;
   };
   footer: {
     tagline: string;
@@ -30,6 +31,16 @@ export interface Dictionary {
   };
   postDetail: {
     back: string;
+  };
+  downloads: {
+    heading: string;
+    metaTitle: string;
+    metaDescription: string;
+    empty: string;
+    downloadLabel: string;
+    previousPage: string;
+    nextPage: string;
+    paginationAriaLabel: string;
   };
   certificates: {
     heading: string;
@@ -63,6 +74,7 @@ const DICTIONARIES: Record<Language, Dictionary> = {
       navAriaLabel: "Sekcje strony",
       navAbout: "O mnie",
       navPosts: "Posty",
+      navDownloads: "Do pobrania",
     },
     footer: {
       tagline: "Blog o zdrowiu wzroku, terapii widzenia i optometrii.",
@@ -80,6 +92,17 @@ const DICTIONARIES: Record<Language, Dictionary> = {
     },
     postDetail: {
       back: "Wróć do listy",
+    },
+    downloads: {
+      heading: "Do pobrania",
+      metaTitle: "Do pobrania | okowFormie",
+      metaDescription:
+        "Materiały do pobrania — ulotki, ćwiczenia i poradniki o zdrowiu wzroku w formacie PDF.",
+      empty: "Brak plików do pobrania.",
+      downloadLabel: "Pobierz plik",
+      previousPage: "Poprzednia strona",
+      nextPage: "Następna strona",
+      paginationAriaLabel: "Stronicowanie",
     },
     certificates: {
       heading: "Moje kursy, szkolenia, certyfikaty",
@@ -111,6 +134,7 @@ const DICTIONARIES: Record<Language, Dictionary> = {
       navAriaLabel: "Site sections",
       navAbout: "About",
       navPosts: "Posts",
+      navDownloads: "Downloads",
     },
     footer: {
       tagline: "A blog about eye health, vision therapy and optometry.",
@@ -128,6 +152,17 @@ const DICTIONARIES: Record<Language, Dictionary> = {
     },
     postDetail: {
       back: "Back to the list",
+    },
+    downloads: {
+      heading: "Downloads",
+      metaTitle: "Downloads | okowFormie",
+      metaDescription:
+        "Downloadable materials — leaflets, exercises and guides about eye health in PDF format.",
+      empty: "No downloads available yet.",
+      downloadLabel: "Download file",
+      previousPage: "Previous page",
+      nextPage: "Next page",
+      paginationAriaLabel: "Pagination",
     },
     certificates: {
       heading: "My courses, training and certificates",

@@ -137,6 +137,12 @@ exports[`Header > dopasowuje snapshot bez imienia i nazwiska (tłumaczenie „O 
     >
       Posts
     </a>
+    <a
+      class="_tab_a5b977"
+      href="/en/do-pobrania"
+    >
+      Downloads
+    </a>
   </nav>
 </header>
 `;
@@ -210,6 +216,12 @@ exports[`Header > dopasowuje snapshot z \`branding: null\` (błąd pobrania) —
       href="/pl/posty"
     >
       Posty
+    </a>
+    <a
+      class="_tab_a5b977"
+      href="/pl/do-pobrania"
+    >
+      Do pobrania
     </a>
   </nav>
 </header>
@@ -358,6 +370,12 @@ exports[`Header > dopasowuje snapshot z dostępnym imieniem i nazwiskiem autorki
     >
       Posty
     </a>
+    <a
+      class="_tab_a5b977"
+      href="/pl/do-pobrania"
+    >
+      Do pobrania
+    </a>
   </nav>
 </header>
 `;
@@ -431,6 +449,12 @@ exports[`Header > dopasowuje snapshot z pustą \`social_links\` (panel jeszcze n
       href="/pl/posty"
     >
       Posty
+    </a>
+    <a
+      class="_tab_a5b977"
+      href="/pl/do-pobrania"
+    >
+      Do pobrania
     </a>
   </nav>
 </header>

@@ -12,6 +12,7 @@ interface PrimaryNavProps {
   ariaLabel: string;
   aboutLabel: string;
   postsLabel: string;
+  downloadsLabel: string;
 }
 
 /**
@@ -31,12 +32,19 @@ export function isActiveLink(pathname: string, href: string): boolean {
  * ścieżki przez propsy z layoutu (który jej nie zna, patrz doc-komentarz
  * `app/[lang]/layout.tsx`).
  */
-export function PrimaryNav({ lang, ariaLabel, aboutLabel, postsLabel }: PrimaryNavProps) {
+export function PrimaryNav({
+  lang,
+  ariaLabel,
+  aboutLabel,
+  postsLabel,
+  downloadsLabel,
+}: PrimaryNavProps) {
   const pathname = usePathname();
 
   const links = [
     { href: `/${lang}/o-mnie`, label: aboutLabel },
     { href: `/${lang}/posty`, label: postsLabel },
+    { href: `/${lang}/do-pobrania`, label: downloadsLabel },
   ] as const;
 
   return (

@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Language } from "@/lib/i18n/languages";
 
-import type { About, Branding, PaginatedResponse, PostDetail, PostSummary } from "./types";
+import type { About, Branding, Download, PaginatedResponse, PostDetail, PostSummary } from "./types";
 
 /**
  * Fetch wyłącznie server-side (Server Components, `generateMetadata`,
@@ -85,4 +85,11 @@ export function getPosts(
 
 export function getPost(lang: Language, slug: string): Promise<PostDetail | null> {
   return fetchApi<PostDetail>(`/api/v1/${lang}/posts/${encodeURIComponent(slug)}/`);
+}
+
+export function getDownloads(
+  lang: Language,
+  page: number,
+): Promise<PaginatedResponse<Download> | null> {
+  return fetchApi<PaginatedResponse<Download>>(`/api/v1/${lang}/downloads/?page=${page}`);
 }

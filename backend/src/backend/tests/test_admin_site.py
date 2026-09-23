@@ -62,7 +62,11 @@ def test_superuser_widzi_kategorie_w_oczekiwanej_kolejnosci(superuser_request: A
 def test_superuser_widzi_kazdy_model_we_wlasciwej_kategorii(superuser_request: Any) -> None:
     grouped = _grouped(superuser_request)
 
-    assert grouped["Treść"] == {("blog", "post"), ("about", "aboutme")}
+    assert grouped["Treść"] == {
+        ("blog", "post"),
+        ("about", "aboutme"),
+        ("downloads", "download"),
+    }
     assert grouped["Branding"] == {("branding", "sitebranding")}
     assert grouped["Konfiguracja AI"] == {
         ("ai_content", "aiprovidersettings"),
