@@ -321,7 +321,7 @@ rozważenie `DATA_UPLOAD_MAX_MEMORY_SIZE` w `settings.py`.
 `backend/src/downloads/validators.py`, `backend/src/backend/settings.py`
 (brak `DATA_UPLOAD_MAX_MEMORY_SIZE`), `docs/tasks/16-pliki-do-pobrania.md`.
 
-## [otwarte] `blog.admin.PostAdmin.admin_title` ma tę samą lukę duplikacji wierszy (JOIN + sortowanie/filtr bez `.distinct()`), naprawioną w `downloads` (2026-09-23)
+## [zrobione] `blog.admin.PostAdmin.admin_title` ma tę samą lukę duplikacji wierszy (JOIN + sortowanie/filtr bez `.distinct()`), naprawioną w `downloads` (2026-09-23)
 Przy `/code-review` na branchu `16-pliki-do-pobrania` wykryto i empirycznie
 zweryfikowano: `DownloadAdmin` (kopia wzorca `PostAdmin`) miał `list_filter`
 i sortowanie kolumny „Nazwa” po polu z relacji `translations` — oba robią
@@ -344,16 +344,16 @@ z dwóch różnych tłumaczeń robi z `(id, title)` dwie różne „distinct” 
 stracił `ordering=` — lista ma kanoniczne sortowanie po polu `order`, a
 sortowanie alfabetyczne po nazwie nie było wymaganiem.
 
-**Do rozważenia w `blog`:** ta sama para napraw (`.distinct()` w
-`PostAdmin.get_queryset()` + usunięcie `ordering="translations__title"` z
-`admin_title`, albo docelowo subquery/annotate zamiast surowego JOIN-a, jeśli
-klikalne sortowanie po tytule ma zostać) — osobny, świadomie zlecony task,
-bo dotyka już działającego panelu bloga.
+**Naprawione w `blog`:** dokładnie ta sama para napraw zastosowana w
+`PostAdmin` — `.distinct()` w `get_queryset()` i usunięcie
+`ordering="translations__title"` z `admin_title`. Regresyjny test
+`test_filtr_statusu_nie_duplikuje_posta_z_dwoma_tlumaczeniami`
+(`blog/tests/test_admin.py`) mirroruje `downloads/tests/test_admin.py`.
 
 **Kontekst:** `backend/src/blog/admin.py` (`PostAdmin.list_filter`,
-`PostAdmin.admin_title`), `backend/src/downloads/admin.py`
-(`DownloadAdmin.get_queryset`, `DownloadAdmin.admin_title` — naprawiony
-wzorzec), `docs/tasks/16-pliki-do-pobrania.md`.
+`PostAdmin.admin_title`, `PostAdmin.get_queryset`), `backend/src/downloads/admin.py`
+(`DownloadAdmin.get_queryset`, `DownloadAdmin.admin_title` — wzorzec),
+`docs/tasks/16-pliki-do-pobrania.md`, `docs/tasks/17-fix-review-findings.md`.
 
 ## [otwarte] `downloadFilename` (frontend) duplikuje transliterację polskich znaków z `blog.slugs.slugify_pl` (backend) — dwie niezależne implementacje tej samej reguły (2026-09-23)
 Przy `/code-review` na branchu `16-pliki-do-pobrania` zauważono:
