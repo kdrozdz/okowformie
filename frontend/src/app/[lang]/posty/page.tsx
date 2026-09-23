@@ -91,7 +91,7 @@ export default async function PostsPage({ params, searchParams }: PostsPageProps
       <h1 className="page-title">{dict.heading}</h1>
       <PostList posts={result.results} lang={lang} emptyMessage={dict.empty} />
       <Pagination
-        lang={lang}
+        basePath={`/${lang}/posty`}
         currentPage={page}
         hasPrevious={Boolean(result.previous)}
         hasNext={Boolean(result.next)}

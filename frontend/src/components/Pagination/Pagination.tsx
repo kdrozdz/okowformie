@@ -1,11 +1,10 @@
 import Link from "next/link";
 
-import type { Language } from "@/lib/i18n/languages";
-
 import styles from "./Pagination.module.css";
 
 interface PaginationProps {
-  lang: Language;
+  /** Ścieżka listy bez query string, np. `/pl/posty` albo `/pl/do-pobrania` — komponent dokleja tylko `?page=`. */
+  basePath: string;
   currentPage: number;
   hasPrevious: boolean;
   hasNext: boolean;
@@ -15,7 +14,7 @@ interface PaginationProps {
 }
 
 export function Pagination({
-  lang,
+  basePath,
   currentPage,
   hasPrevious,
   hasNext,
@@ -30,14 +29,14 @@ export function Pagination({
   return (
     <nav className={styles.pagination} aria-label={ariaLabel}>
       {hasPrevious ? (
-        <Link href={`/${lang}/posty?page=${currentPage - 1}`} className={styles.link}>
+        <Link href={`${basePath}?page=${currentPage - 1}`} className={styles.link}>
           &larr; {previousLabel}
         </Link>
       ) : (
         <span className={styles.spacer} aria-hidden="true" />
       )}
       {hasNext ? (
-        <Link href={`/${lang}/posty?page=${currentPage + 1}`} className={styles.link}>
+        <Link href={`${basePath}?page=${currentPage + 1}`} className={styles.link}>
           {nextLabel} &rarr;
         </Link>
       ) : (
