@@ -491,3 +491,33 @@ Wciąż otwarte: wizualne potwierdzenie przez użytkownika w przeglądarce —
 oba zgłoszenia były wizualne, żaden automatyczny test w tym repo nie
 renderuje realnego CSS w przeglądarce (brak takiego narzędzia w tym
 środowisku).
+
+### Druga runda `/code-review` (po commitach): jedno potwierdzone znalezisko
+
+Po zacommitowaniu implementacji+testów+dokumentacji, ponowny `/code-review`
+(medium) na całym diffie znalazł jedno potwierdzone, zweryfikowane
+empirycznie znalezisko: `django.contrib.auth.Group` jest zarejestrowany w
+adminie domyślnie (`django.contrib.auth.admin`), ale nie był wypisany w
+`_APP_LIST_CATEGORIES` — `OkowformieAdminSite.get_app_list` (allowlist)
+cicho usuwał go z całej nawigacji (strona główna **i** sidebar, bo
+`AdminSite.each_context` woła `get_app_list` na każdej stronie), dla
+**każdego** użytkownika, w tym superusera. URL (`/panel-redakcyjny/auth/group/`)
+wciąż działał — tylko link do niego znikł z UI. Nieopisane w tym pliku ani
+w `docs/todo/TODO.md` jako świadomie zaakceptowany gap — to była zwykła
+regresja z przeoczenia, nie decyzja.
+
+**Naprawa (dwuwarstwowa, żeby to samo przeoczenie nie powtórzyło się dla
+innego modelu w przyszłości):**
+1. Jawny wpis `("auth", "group")` w kategorii „Konta" — bezpośrednia
+   naprawa zgłoszonego przypadku.
+2. **Fallback „Inne"** w `OkowformieAdminSite.get_app_list`: każdy model
+   zarejestrowany w adminie, ale nie wypisany w żadnej kategorii, trafia
+   teraz do kategorii `Inne` (dopisanej na końcu listy) — zamiast cicho
+   znikać. Permission-filtering z `_build_app_dict` dzieje się **przed**
+   tym mechanizmem (jak wcześniej), więc fallback nie ujawnia niczego, do
+   czego użytkownik nie ma uprawnień — tylko gwarantuje, że nic
+   uprawnionego nie zniknie bez śladu z nawigacji.
+2 nowe testy (`backend/tests/test_admin_site.py`): `auth.group` w „Konta"
+dla superusera (zaktualizowana istniejąca asercja), i test fallbacku
+(`monkeypatch` na `_APP_LIST_CATEGORIES` bez wpisu `auth.group` — model
+ląduje w „Inne”, nie znika). `pytest` **293 passed**, `ruff`/`mypy` czyste.

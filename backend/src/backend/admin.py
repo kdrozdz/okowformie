@@ -21,9 +21,10 @@ admin.site.index_title = "Panel redakcyjny"
 #: `docs/tasks/15-motyw-panelu-admina.md` („Decyzje po drodze” → „Spec
 #: kolorów/layoutu”). Klucz to `(app_label, model_name)` dokładnie tak, jak
 #: budowane w `AdminSite._build_app_dict` (`model._meta.model_name`, zawsze
-#: małymi literami) — dopisanie nowego modelu do panelu bez dopisania go
-#: tutaj po prostu nie pojawi się w żadnej kategorii (fail-safe w stronę
-#: "brak", nie w stronę "wyciek do złej kategorii").
+#: małymi literami). Model, który jest zarejestrowany w adminie, ale nie
+#: jest wypisany tutaj (np. `auth.Group` — dopisany, ale poprawka pokazuje
+#: ryzyko), i tak trafia do panelu przez kategorię fallback "Inne" w
+#: `get_app_list` niżej — nigdy nie znika bez śladu z nawigacji.
 _APP_LIST_CATEGORIES: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] = (
     # (slug ASCII dla app_label/id w HTML, nazwa wyświetlana, modele)
     ("content", "Treść", (("blog", "post"), ("about", "aboutme"))),
@@ -33,8 +34,17 @@ _APP_LIST_CATEGORIES: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] =
         "Konfiguracja AI",
         (("ai_content", "aiprovidersettings"), ("ai_content", "postgenerator")),
     ),
-    ("accounts", "Konta", (("accounts", "user"),)),
+    ("accounts", "Konta", (("accounts", "user"), ("auth", "group"))),
 )
+
+#: Kategoria fallback dla modeli zarejestrowanych w adminie, ale nie
+#: wypisanych w `_APP_LIST_CATEGORIES` — bez niej dopisanie modelu do
+#: panelu (własnego albo z apki firmy trzeciej, np. `django.contrib.auth`)
+#: bez dopisania go tutaj cicho usuwało go z całej nawigacji (strona
+#: główna **i** sidebar, `AdminSite.each_context`), mimo że URL wciąż
+#: działał — `auth.Group` był tym dokładnym przypadkiem, znaleziony przez
+#: `/code-review`.
+_FALLBACK_CATEGORY_NAME = "Inne"
 
 
 class OkowformieAdminSite(admin.AdminSite):
@@ -67,12 +77,9 @@ class OkowformieAdminSite(admin.AdminSite):
             for app in app_dict.values()
             for model in app["models"]
         }
+        remaining_keys = set(models_by_key)
 
-        grouped: list[dict[str, Any]] = []
-        for slug, name, keys in _APP_LIST_CATEGORIES:
-            models = [models_by_key[key] for key in keys if key in models_by_key]
-            if not models:
-                continue
+        def build_category(slug: str, name: str, models: list[dict[str, Any]]) -> dict[str, Any]:
             models.sort(key=lambda m: m["name"])
             # Link na nazwie kategorii prowadzi do pierwszego modelu — nie ma
             # odpowiednika `admin:app_list` dla kategorii, która nie jest
@@ -81,15 +88,29 @@ class OkowformieAdminSite(admin.AdminSite):
             # pusty string jest podłańcuchem każdego stringa — wszystkie
             # kategorie dostałyby fałszywie klasę `current-app`.
             first_url = next((m["admin_url"] for m in models if m.get("admin_url")), None)
-            grouped.append(
-                {
-                    "name": name,
-                    "app_label": slug,
-                    "app_url": first_url or "#",
-                    "has_module_perms": True,
-                    "models": models,
-                }
-            )
+            return {
+                "name": name,
+                "app_label": slug,
+                "app_url": first_url or "#",
+                "has_module_perms": True,
+                "models": models,
+            }
+
+        grouped: list[dict[str, Any]] = []
+        for slug, name, keys in _APP_LIST_CATEGORIES:
+            models = [models_by_key[key] for key in keys if key in models_by_key]
+            remaining_keys -= set(keys)
+            if models:
+                grouped.append(build_category(slug, name, models))
+
+        # Fallback: modele zarejestrowane w adminie, ale nie wypisane w
+        # żadnej kategorii wyżej (np. `auth.Group` — patrz komentarz przy
+        # `_FALLBACK_CATEGORY_NAME`) — bez tego cicho znikały z całej
+        # nawigacji, mimo że użytkownik miał do nich uprawnienia.
+        leftover = [models_by_key[key] for key in remaining_keys]
+        if leftover:
+            grouped.append(build_category("other", _FALLBACK_CATEGORY_NAME, leftover))
+
         return grouped
 
 

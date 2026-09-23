@@ -68,7 +68,33 @@ def test_superuser_widzi_kazdy_model_we_wlasciwej_kategorii(superuser_request: A
         ("ai_content", "aiprovidersettings"),
         ("ai_content", "postgenerator"),
     }
-    assert grouped["Konta"] == {("accounts", "user")}
+    # `auth.Group` jest zarejestrowany w adminie domyślnie przez Django
+    # (`django.contrib.auth.admin`) — regresja znaleziona przez
+    # `/code-review`: bez jawnego wpisu w `_APP_LIST_CATEGORIES` znikał z
+    # całej nawigacji (strona główna i sidebar), mimo że URL wciąż działał.
+    assert grouped["Konta"] == {("accounts", "user"), ("auth", "group")}
+
+
+def test_model_bez_kategorii_nie_znika_z_nawigacji_tylko_trafia_do_inne(
+    superuser_request: Any, monkeypatch: Any
+) -> None:
+    """Fallback na wypadek, gdyby to samo przeoczenie (jak z `auth.Group`)
+    powtórzyło się dla innego modelu w przyszłości: model zarejestrowany w
+    adminie, ale nie wypisany w żadnej kategorii, trafia do kategorii
+    "Inne" — nigdy nie znika bez śladu.
+    """
+    from backend import admin as backend_admin
+
+    categories_without_groups = tuple(
+        (slug, name, tuple(key for key in keys if key != ("auth", "group")))
+        for slug, name, keys in backend_admin._APP_LIST_CATEGORIES
+    )
+    monkeypatch.setattr(backend_admin, "_APP_LIST_CATEGORIES", categories_without_groups)
+
+    grouped = _grouped(superuser_request)
+
+    assert grouped["Inne"] == {("auth", "group")}
+    assert ("auth", "group") not in grouped["Konta"]
 
 
 # --- Grupowanie faktycznie filtruje wg uprawnień, nie tylko układa ---------
