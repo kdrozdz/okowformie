@@ -1,7 +1,7 @@
 # 16 — Pliki do pobrania (nowa pozycja menu + panel + publiczne API + frontend)
 
 - **Cel:** Nowa pozycja menu „Do pobrania" — lista plików (na start: PDF) zarządzana w panelu redakcyjnym (dodawanie, sortowanie, zmiana widoczności `draft`/`published`/`archived`, trwałe usunięcie), wystawiona publicznym API i wyrenderowana na froncie. Nowa domenowa aplikacja `downloads`. Storage lokalny (wolumen) teraz, przez abstrakcję Django `STORAGES` — przejście na S3 w przyszłości bez zmian w modelu (otwarta decyzja w `CLAUDE.md`, `scope.md`).
-- **Status:** gotowe — implementacja, review `qa-agent`, `/code-review` i naprawa wszystkich znalezisk zakończone, `/check` zielone. Nic nie jest jeszcze zmergowane do `main`.
+- **Status:** gotowe — implementacja, review `qa-agent`, `/code-review`, naprawa wszystkich znalezisk i dwa dodatkowe poprawki po ręcznym sprawdzeniu przez użytkownika (link pobierania cross-origin, sticky footer) zakończone, `/check` zielone. Nic nie jest jeszcze zmergowane do `main`.
 
 ## Decyzje wejściowe (z brainstormingu)
 
@@ -147,3 +147,27 @@ Frontend: `npm run lint`/`typecheck` czyste, `npm test` → **17 plików, 94 tes
 **#7 (`Pagination.basePath: string` zamiast zamkniętego enuma) — świadomie nienaprawiane.** Spekulacyjne — sugestia dotyczy hipotetycznego przyszłego wywołującego, nie realnego dziś scenariusza awarii (oba miejsca użycia budują `basePath` poprawnie). Wzmacnianie typu pod nieistniejące jeszcze ryzyko łamie YAGNI.
 
 Po naprawach #1–#4: pełne `/check` (sekcja wyżej) zielone — 325 testów backendu (w tym 2 nowe regresyjne), 94 testy frontendu (w tym 3 nowe).
+
+## Poprawki po ręcznym sprawdzeniu przez użytkownika (2026-09-23)
+
+Po zmergowaniu code-review użytkownik przetestował funkcję ręcznie i zgłosił dwa realne defekty, nieuchwycone przez `qa-agent` ani `/code-review` (żaden z nich nie miał jak zaobserwować faktycznego zachowania przeglądarki/wizualnego layoutu — obaj jawnie zgłosili brak dostępu do przeglądarki/MCP w swoich raportach).
+
+### Link pobierania nawigował poza stronę zamiast pobrać plik
+**Zgłoszenie:** „Po kliknięciu w plik na front-endzie, zamiast pobrać go automatycznie na dysk, otwiera się on i wychodzimy jakby z naszej strony."
+
+**Diagnoza:** `download.file` to absolutny URL na innym originie niż frontend (backend/storage, `core.api.absolute_media_url` buduje go z `SITE_URL`). Atrybut HTML `download` na `<a>` jest przez przeglądarki **ignorowany dla linków cross-origin** (ograniczenie bezpieczeństwa, nie bug przeglądarki) — więc mimo poprawnej wartości `download="cennik-uslug.pdf"` (naprawionej w code-review, patrz znalezisko #2–#4 wyżej), klik po prostu nawigował/otwierał PDF zamiast go zapisać, tak jak zwykły link.
+
+**Naprawa:** nowy komponent kliencki `frontend/src/components/DownloadList/DownloadButton.tsx` — jedyny sposób wymuszenia realnego pobrania niezależnie od originu: `fetch(fileUrl)` → `blob` → `URL.createObjectURL` (zawsze same-origin względem dokumentu, który go stworzył) → programowy klik w tymczasowy `<a download>` wskazujący na ten blob URL. `href` na widocznym linku zostaje ustawiony na oryginalny URL (fallback bez JS, middle-click/ctrl-click, „kopiuj link"), `onClick` robi `preventDefault()` i przejmuje pobranie. Błąd `fetch`/HTTP → fallback na `window.open(fileUrl, "_blank", "noopener,noreferrer")` zamiast martwego przycisku. `"use client"` ograniczony do tego jednego małego komponentu — reszta `DownloadList`/strony zostaje server component (`.claude/rules/performance.md`: `"use client"` tylko gdy potrzebna interaktywność).
+
+4 nowe testy (`DownloadButton.test.tsx`, mock `fetch`/`URL.createObjectURL`/`window.open`, spy na `HTMLAnchorElement.prototype.click`): happy path (fetch → blob → klik w blob URL z poprawną nazwą, oryginalny link nieotwarty), błąd sieci → fallback `window.open`, błąd HTTP (bez rzucania) → fallback `window.open` bez próby pobrania treści błędu jako pliku, `href` obecny na renderowanym linku. `DownloadList.test.tsx` skorygowany — asercja `download` na widocznym `<a>` usunięta (atrybut żyje teraz tylko na tymczasowym elemencie w handlerze, nie na renderowanym DOM-ie), przeniesiona odpowiedzialność do `DownloadButton.test.tsx`.
+
+### Stopka nie trzymała się dołu strony przy krótkiej treści
+**Zgłoszenie:** „Page Content również powinien mieć stałą wysokość, ponieważ teraz, gdy jest tylko jeden plik, ta stopka praktycznie jest w połowie ekranu. Więc powinno być zawsze tak, że stopka jest na dole. Ewentualnie, gdy jest dużo postów albo dużo plików, to strona się rozszerza automatycznie."
+
+**Diagnoza:** `frontend/src/app/globals.css` już miał wzorzec sticky-footer (`body { display: flex; flex-direction: column; min-height: 100%; }` + `.page-content { flex: 1; }`), ale `min-height: 100%` potrzebuje jawnej wysokości na `html`, której `globals.css` nie ustawia — procent nie miał się do czego odnieść, więc realnie nie wymuszał żadnej minimalnej wysokości. Przy krótkiej treści (np. lista z jednym plikiem) `body` kurczył się do wysokości treści i stopka lądowała tuż pod nią, nie na dole ekranu.
+
+**Naprawa:** `min-height: 100%` → `min-height: 100vh` (`globals.css:37`) — wiąże się bezpośrednio do wysokości viewportu, nie potrzebuje wysokości ustawionej na `html`. `flex: 1` na `.page-content` (bez zmian) nadal odpowiada za rozciąganie się przy krótkiej treści i normalny wzrost przy długiej (lista postów/plików dłuższa niż viewport) — jeden, jednoliniowy fix, bez zmiany reszty layoutu.
+
+Nie sprawdzone wizualnie w przeglądarce (brak dostępu do przeglądarki/MCP w tej sesji, jak w poprzednich krokach tego taska) — potwierdzone: kod się kompiluje (`npm run lint`/`typecheck` czyste), strona `/pl/do-pobrania` zwraca `200` przez `curl` po zmianie, testy jednostkowe `DownloadButton` przechodzą. Oba fixy to standardowe, dobrze udokumentowane wzorce (cross-origin `download` + `fetch`/blob; sticky footer przez `100vh`), nie eksperymentalne rozwiązania.
+
+Po tych poprawkach: `npm run lint`/`typecheck` czyste, `npm test` → **18 plików testowych, 100 testów przeszło** (było 17/94, +1 plik `DownloadButton.test.tsx` z 4 testami, `DownloadList.test.tsx` skorygowany bez zmiany liczby testów).

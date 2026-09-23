@@ -27,7 +27,14 @@ body {
 
 body {
   margin: 0;
-  min-height: 100%;
+  /* `100vh`, nie `100%` — procent potrzebowałby jawnej wysokości na `html`,
+     której nie ustawiamy; `100vh` wiąże się bezpośrednio do wysokości
+     viewportu. Bez tego stopka (`Footer`, poniżej `.page-content { flex: 1 }`)
+     nie miała się do czego rozciągnąć przy krótkiej treści (np. lista z
+     jednym plikiem do pobrania) i lądowała w połowie ekranu zamiast na dole;
+     przy treści dłuższej niż viewport strona i tak rośnie normalnie, `flex: 1`
+     nie ogranicza wysokości w górę. */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--bg);

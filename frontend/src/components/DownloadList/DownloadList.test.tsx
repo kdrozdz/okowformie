@@ -38,11 +38,12 @@ describe("DownloadList", () => {
 
     // `aria-label` niesie tytuł pliku — bez tego czytnik ekranu w trybie
     // "lista linków" odczytałby "Pobierz plik" tyle razy, ile jest pozycji,
-    // bez możliwości ich rozróżnienia.
+    // bez możliwości ich rozróżnienia. Rzeczywiste pobieranie (fetch → blob,
+    // czytelna nazwa pliku) to zachowanie `DownloadButton`, przetestowane
+    // osobno w `DownloadButton.test.tsx` — tu sprawdzamy tylko, że
+    // `DownloadList` przekazuje mu właściwy `href`/etykietę.
     const firstLink = screen.getByRole("link", { name: "Pobierz plik: Ćwiczenia dla oczu" });
     expect(firstLink).toHaveAttribute("href", "http://backend:8000/media/downloads/files/abc123.pdf");
-    // Nazwa pobieranego pliku czytelna, nie losowy UUID ze storage.
-    expect(firstLink).toHaveAttribute("download", "cwiczenia-dla-oczu.pdf");
 
     expect(
       screen.getByRole("link", { name: "Pobierz plik: Ulotka: dobór soczewek" }),
